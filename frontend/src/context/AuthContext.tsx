@@ -7,7 +7,11 @@ import {
 
 import type { ReactNode } from "react";
 
-import { getCurrentUser, signOut } from "aws-amplify/auth";
+import {
+  getCurrentUser,
+  fetchAuthSession,
+  signOut,
+} from "aws-amplify/auth";
 
 type AuthContextType = {
   user: string | null;
@@ -30,20 +34,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function checkUser() {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser.username);
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+  try {
+    const currentUser = await getCurrentUser();
+    const session = await fetchAuthSession();
+
+    const email = session.tokens?.idToken?.payload.email as string | undefined;
+
+    setUser(email ?? currentUser.username);
+  } catch (err) {
+    console.error("Authentication check failed:", err);
+    setUser(null);
+  } finally {
+    setLoading(false);
   }
+}
 
   async function logout() {
+  try {
     await signOut();
+  } finally {
     setUser(null);
   }
+}
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>

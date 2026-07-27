@@ -5,5 +5,5 @@ export const cognitoConfig = {
   redirectSignIn: import.meta.env.VITE_REDIRECT_URI,
   redirectSignOut: import.meta.env.VITE_LOGOUT_URI,
   responseType: "code",
-  scopes: ["openid", "email"],
+  scopes: ["openid", "email", "profile"],
 };
