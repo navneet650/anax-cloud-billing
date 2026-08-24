@@ -33,7 +33,18 @@ export default function AppLayout({ children }: Props) {
           padding: "24px",
         }}
       >
-        <h2>Anax Cloud Billing</h2>
+        <h2
+  style={{
+    color: "#ffffff",
+    margin: 0,
+    fontSize: "20px",
+    fontWeight: 700,
+    textAlign: "center",
+    lineHeight: 1.2,
+  }}
+>
+  Anax Cloud Billing
+</h2>
 
         <hr style={{ margin: "20px 0", opacity: 0.3 }} />
 
