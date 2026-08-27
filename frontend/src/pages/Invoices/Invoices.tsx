@@ -15,6 +15,52 @@ const currencies = [
   { code: "GBP", symbol: "£" },
 ];
 
+type SmartInvoiceStatus =
+  | "Draft"
+  | "Sent"
+  | "Pending"
+  | "Due Today"
+  | "Overdue"
+  | "Paid";
+
+const getSmartInvoiceStatus = (
+  invoice: Invoice
+): SmartInvoiceStatus => {
+  // Paid invoices always remain paid
+  if (invoice.status === "Paid") {
+    return "Paid";
+  }
+
+  // Draft invoices remain drafts
+  if (invoice.status === "Draft") {
+    return "Draft";
+  }
+
+  // No due date
+  if (!invoice.dueDate) {
+    return invoice.status === "Sent"
+      ? "Sent"
+      : "Pending";
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(
+    `${invoice.dueDate}T00:00:00`
+  );
+
+  if (dueDate < today) {
+    return "Overdue";
+  }
+
+  if (dueDate.getTime() === today.getTime()) {
+    return "Due Today";
+  }
+
+  return "Pending";
+};
+
 export default function Invoices() {
   const [showCreate, setShowCreate] = useState(false);
 
@@ -24,7 +70,7 @@ const [editingInvoiceId, setEditingInvoiceId] =
 const [searchTerm, setSearchTerm] = useState("");
 
 const [statusFilter, setStatusFilter] = useState<
-  "All" | Invoice["status"]
+  "All" | SmartInvoiceStatus
 >("All");
 
 const [customers] = useState<Customer[]>(() =>
@@ -909,9 +955,12 @@ const filteredInvoices = invoices.filter((invoice) => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
 
-  const matchesStatus =
-    statusFilter === "All" ||
-    invoice.status === statusFilter;
+  const smartStatus =
+  getSmartInvoiceStatus(invoice);
+
+const matchesStatus =
+  statusFilter === "All" ||
+  smartStatus === statusFilter;
 
   return matchesSearch && matchesStatus;
 });
@@ -1022,11 +1071,12 @@ const filteredInvoices = invoices.filter((invoice) => {
               }}
             >
               <option value="All">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Sent">Sent</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
-              <option value="Overdue">Overdue</option>
+<option value="Draft">Draft</option>
+<option value="Sent">Sent</option>
+<option value="Pending">Pending</option>
+<option value="Due Today">Due Today</option>
+<option value="Overdue">Overdue</option>
+<option value="Paid">Paid</option>
             </select>
           </div>
 
@@ -1098,28 +1148,65 @@ const filteredInvoices = invoices.filter((invoice) => {
                   </td>
 
                   <td style={styles.td}>
-  <select
-    value={invoice.status}
-    onChange={(e) =>
-      updateInvoiceStatus(
-        invoice.id,
-        e.target.value as Invoice["status"]
-      )
+  {(() => {
+    const smartStatus =
+      getSmartInvoiceStatus(invoice);
+
+    const isAutomatic =
+      smartStatus === "Pending" ||
+      smartStatus === "Due Today" ||
+      smartStatus === "Overdue";
+
+    if (isAutomatic) {
+      return (
+        <span
+          style={{
+            padding: "6px 10px",
+            borderRadius: "6px",
+            fontSize: "13px",
+            fontWeight: 600,
+            background:
+              smartStatus === "Overdue"
+                ? "#fef2f2"
+                : smartStatus === "Due Today"
+                ? "#fff7ed"
+                : "#fffbeb",
+            color:
+              smartStatus === "Overdue"
+                ? "#dc2626"
+                : smartStatus === "Due Today"
+                ? "#ea580c"
+                : "#d97706",
+          }}
+        >
+          {smartStatus}
+        </span>
+      );
     }
-    style={{
-      padding: "6px 10px",
-      borderRadius: "6px",
-      border: "1px solid #d1d5db",
-      cursor: "pointer",
-      fontSize: "13px",
-    }}
-  >
-    <option value="Draft">Draft</option>
-    <option value="Sent">Sent</option>
-    <option value="Pending">Pending</option>
-    <option value="Paid">Paid</option>
-    <option value="Overdue">Overdue</option>
-  </select>
+
+    return (
+      <select
+        value={invoice.status}
+        onChange={(e) =>
+          updateInvoiceStatus(
+            invoice.id,
+            e.target.value as Invoice["status"]
+          )
+        }
+        style={{
+          padding: "6px 10px",
+          borderRadius: "6px",
+          border: "1px solid #d1d5db",
+          cursor: "pointer",
+          fontSize: "13px",
+        }}
+      >
+        <option value="Draft">Draft</option>
+        <option value="Sent">Sent</option>
+        <option value="Paid">Paid</option>
+      </select>
+    );
+  })()}
 </td>
 
                   <td style={styles.td}>
@@ -1226,20 +1313,14 @@ const filteredInvoices = invoices.filter((invoice) => {
 
               <div style={styles.formGrid}>
                 <FormField label="Invoice Number">
-                  <input
-                    value={invoiceNumber}
-                    onChange={(e) => {
-  const newDate = e.target.value;
-
-  setInvoiceDate(newDate);
-
-  setDueDate(
-    calculateDueDate(newDate, paymentTerms)
-  );
-}}
-                    style={styles.input}
-                  />
-                </FormField>
+  <input
+    value={invoiceNumber}
+    onChange={(e) =>
+      setInvoiceNumber(e.target.value)
+    }
+    style={styles.input}
+  />
+</FormField>
 
                 <FormField label="Invoice Date">
                   <input
