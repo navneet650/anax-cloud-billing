@@ -26,6 +26,7 @@ type DashboardInvoice = {
   amount?: number | string;
   total?: number | string;
   grandTotal?: number | string;
+  currency?: string;
   status?: string;
 };
 
@@ -112,12 +113,18 @@ export default function Dashboard() {
     );
   };
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-IN", {
+  const formatCurrency = (
+  amount: number,
+  currencyCode = "INR"
+) =>
+  new Intl.NumberFormat(
+    currencyCode === "INR" ? "en-IN" : undefined,
+    {
       style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount);
+      currency: currencyCode,
+      maximumFractionDigits: 2,
+    }
+  ).format(amount);
 
   const totalStatusCount =
     paidCount + pendingCount + overdueCount;
@@ -487,7 +494,7 @@ export default function Dashboard() {
 
                     <div style={styles.invoiceRight}>
                       <div style={styles.invoiceAmount}>
-                        {formatCurrency(amount)}
+                        {formatCurrency(amount, invoice.currency || "INR")}
                       </div>
 
                       <span
