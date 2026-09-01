@@ -1147,46 +1147,13 @@ const matchesStatus =
                     {formatCurrency(invoice.amount, invoice.currency)}
                   </td>
 
-                  <td style={styles.td}>
+                 <td style={styles.td}>
   {(() => {
-    const smartStatus =
-      getSmartInvoiceStatus(invoice);
-
-    const isAutomatic =
-      smartStatus === "Pending" ||
-      smartStatus === "Due Today" ||
-      smartStatus === "Overdue";
-
-    if (isAutomatic) {
-      return (
-        <span
-          style={{
-            padding: "6px 10px",
-            borderRadius: "6px",
-            fontSize: "13px",
-            fontWeight: 600,
-            background:
-              smartStatus === "Overdue"
-                ? "#fef2f2"
-                : smartStatus === "Due Today"
-                ? "#fff7ed"
-                : "#fffbeb",
-            color:
-              smartStatus === "Overdue"
-                ? "#dc2626"
-                : smartStatus === "Due Today"
-                ? "#ea580c"
-                : "#d97706",
-          }}
-        >
-          {smartStatus}
-        </span>
-      );
-    }
+    const smartStatus = getSmartInvoiceStatus(invoice);
 
     return (
       <select
-        value={invoice.status}
+        value={invoice.status === "Paid" ? "Paid" : smartStatus}
         onChange={(e) =>
           updateInvoiceStatus(
             invoice.id,
@@ -1201,15 +1168,49 @@ const matchesStatus =
           fontSize: "13px",
         }}
       >
-        <option value="Draft">Draft</option>
-        <option value="Sent">Sent</option>
-        <option value="Paid">Paid</option>
+        {invoice.status === "Paid" ? (
+          <>
+            <option value="Paid">Paid</option>
+            <option value="Sent">Sent</option>
+          </>
+        ) : smartStatus === "Overdue" ? (
+          <>
+            <option value="Overdue">Overdue</option>
+            <option value="Paid">Paid</option>
+            <option value="Sent">Sent</option>
+            <option value="Draft">Draft</option>
+          </>
+        ) : (
+          <>
+            <option value={smartStatus}>{smartStatus}</option>
+            <option value="Paid">Paid</option>
+            <option value="Sent">Sent</option>
+            <option value="Draft">Draft</option>
+          </>
+        )}
       </select>
     );
   })()}
 </td>
 
                   <td style={styles.td}>
+                    {invoice.status === "Draft" && (
+  <button
+    type="button"
+    onClick={() =>
+      updateInvoiceStatus(invoice.id, "Sent")
+    }
+    style={{
+      border: "none",
+      background: "transparent",
+      color: "#7c3aed",
+      cursor: "pointer",
+      fontWeight: 600,
+    }}
+  >
+    Send
+  </button>
+)}
   <button
     type="button"
     onClick={() => editInvoice(invoice)}
