@@ -28,17 +28,23 @@ type DashboardInvoice = {
   grandTotal?: number | string;
   currency?: string;
   status?: string;
+dueDate?: string;
 };
 
 export default function Dashboard() {
   const [customerCount, setCustomerCount] = useState(0);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
-  const [revenue, setRevenue] = useState(0);
-  const [outstanding, setOutstanding] = useState(0);
-  const [paidCount, setPaidCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [overdueCount, setOverdueCount] = useState(0);
+  const [revenueByCurrency, setRevenueByCurrency] =
+  useState<Record<string, number>>({});
+
+const [outstandingByCurrency, setOutstandingByCurrency] =
+  useState<Record<string, number>>({});
+
+const [paidCount, setPaidCount] = useState(0);
+const [pendingCount, setPendingCount] = useState(0);
+const [overdueCount, setOverdueCount] = useState(0);
+const [draftCount, setDraftCount] = useState(0);
   const [recentInvoices, setRecentInvoices] = useState<
     DashboardInvoice[]
   >([]);
@@ -59,6 +65,21 @@ export default function Dashboard() {
         .replace(/,/g, "")
     ) || 0;
   };
+  const getSmartStatus = (invoice: DashboardInvoice) => {
+  if (invoice.status === "Paid") {
+    return "Paid";
+  }
+
+  if (
+    invoice.dueDate &&
+    new Date(invoice.dueDate) < new Date() &&
+    invoice.status !== "Draft"
+  ) {
+    return "Overdue";
+  }
+
+  return invoice.status || "Draft";
+};
 
   const loadDashboardData = () => {
     const customers = customerService.getAll();
@@ -71,40 +92,59 @@ export default function Dashboard() {
     setProductCount(products.length);
 
     const paidInvoices = invoices.filter(
-      (invoice) =>
-        invoice.status?.toLowerCase() === "paid"
-    );
+  (invoice) => getSmartStatus(invoice) === "Paid"
+);
 
-    const pendingInvoices = invoices.filter(
-      (invoice) =>
-        invoice.status?.toLowerCase() === "pending"
-    );
+const pendingInvoices = invoices.filter(
+  (invoice) =>
+    getSmartStatus(invoice) === "Pending" ||
+    getSmartStatus(invoice) === "Sent"
+);
 
-    const overdueInvoices = invoices.filter(
-      (invoice) =>
-        invoice.status?.toLowerCase() === "overdue"
-    );
+const overdueInvoices = invoices.filter(
+  (invoice) => getSmartStatus(invoice) === "Overdue"
+);
 
-    const paidRevenue = paidInvoices.reduce(
-      (sum, invoice) => sum + getAmount(invoice),
-      0
-    );
+const draftInvoices = invoices.filter(
+  (invoice) => getSmartStatus(invoice) === "Draft"
+);
 
-    const outstandingAmount = invoices
-      .filter(
-        (invoice) =>
-          invoice.status?.toLowerCase() !== "paid"
-      )
-      .reduce(
-        (sum, invoice) => sum + getAmount(invoice),
-        0
-      );
+const paidRevenueTotals = paidInvoices.reduce<
+  Record<string, number>
+>((totals, invoice) => {
+  const currency = invoice.currency || "INR";
 
-    setRevenue(paidRevenue);
-    setOutstanding(outstandingAmount);
-    setPaidCount(paidInvoices.length);
-    setPendingCount(pendingInvoices.length);
-    setOverdueCount(overdueInvoices.length);
+  totals[currency] =
+    (totals[currency] || 0) + getAmount(invoice);
+
+  return totals;
+}, {});
+
+const outstandingTotals = invoices
+  .filter(
+    (invoice) =>
+      getSmartStatus(invoice) !== "Paid" &&
+      getSmartStatus(invoice) !== "Draft"
+  )
+  .reduce<Record<string, number>>(
+    (totals, invoice) => {
+      const currency = invoice.currency || "INR";
+
+      totals[currency] =
+        (totals[currency] || 0) + getAmount(invoice);
+
+      return totals;
+    },
+    {}
+  );
+
+setRevenueByCurrency(paidRevenueTotals);
+setOutstandingByCurrency(outstandingTotals);
+
+setPaidCount(paidInvoices.length);
+setPendingCount(pendingInvoices.length);
+setOverdueCount(overdueInvoices.length);
+setDraftCount(draftInvoices.length);
 
     setRecentInvoices(
       [...invoices]
@@ -125,9 +165,23 @@ export default function Dashboard() {
       maximumFractionDigits: 2,
     }
   ).format(amount);
+  const formatCurrencyTotals = (
+  totals: Record<string, number>
+) => {
+  const entries = Object.entries(totals);
 
-  const totalStatusCount =
-    paidCount + pendingCount + overdueCount;
+  if (entries.length === 0) {
+    return formatCurrency(0);
+  }
+
+  return entries
+    .map(([currency, amount]) =>
+      formatCurrency(amount, currency)
+    )
+    .join(" • ");
+};
+
+  const totalStatusCount = invoiceCount;
 
   const getPercentage = (count: number) => {
     if (!totalStatusCount) return 0;
@@ -216,8 +270,8 @@ export default function Dashboard() {
 
       <div style={styles.kpiGrid}>
         <MetricCard
-          title="Total Revenue"
-          value={formatCurrency(revenue)}
+          title="Paid Revenue"
+value={formatCurrencyTotals(revenueByCurrency)}
           icon={<DollarSign size={24} />}
           tint="#edf5ff"
           iconBackground="#dcecff"
@@ -249,7 +303,7 @@ export default function Dashboard() {
 
         <MetricCard
           title="Outstanding"
-          value={formatCurrency(outstanding)}
+value={formatCurrencyTotals(outstandingByCurrency)}
           icon={<Clock size={24} />}
           tint="#fff8ed"
           iconBackground="#ffedd0"
@@ -299,7 +353,7 @@ export default function Dashboard() {
               </span>
 
               <div style={styles.revenueValue}>
-                {formatCurrency(revenue)}
+                {formatCurrencyTotals(revenueByCurrency)}
               </div>
 
               <div style={styles.revenueHint}>
@@ -415,6 +469,13 @@ export default function Dashboard() {
               color="#c14c4c"
               icon={<AlertCircle size={18} />}
             />
+            <StatusRow
+  label="Draft"
+  count={draftCount}
+  percentage={getPercentage(draftCount)}
+  color="#64748b"
+  icon={<FileText size={18} />}
+/>
           </div>
 
           <div style={styles.statusFooter}>
@@ -501,11 +562,11 @@ export default function Dashboard() {
                         style={{
                           ...styles.statusBadge,
                           ...getStatusStyle(
-                            invoice.status
-                          ),
+  getSmartStatus(invoice)
+),
                         }}
                       >
-                        {invoice.status ?? "Draft"}
+                        {getSmartStatus(invoice)}
                       </span>
                     </div>
                   </div>
