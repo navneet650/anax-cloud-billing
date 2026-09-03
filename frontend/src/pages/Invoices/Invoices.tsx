@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { settingsService } from "../../services/settingsService";
 import jsPDF from "jspdf";
 import { customerService } from "../../services/customerService";
 import { invoiceService } from "../../services/invoiceService";
@@ -84,7 +85,8 @@ const [products] = useState<Product[]>(() =>
     .getAll()
     .filter((product) => product.isActive)
 );
-  const [invoiceNumber, setInvoiceNumber] = useState("INV-1005");
+const settings = settingsService.get();
+  const [invoiceNumber, setInvoiceNumber] = useState(`${settings.invoicePrefix}1005`);
 
   const [invoiceDate, setInvoiceDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -94,8 +96,10 @@ const [products] = useState<Product[]>(() =>
   const selectedCustomer = customers.find(
   (item) => item.id === customer
 );
-  const [currency, setCurrency] = useState("INR");
-  const [paymentTerms, setPaymentTerms] = useState("30");
+  const [currency, setCurrency] = useState(settings.defaultCurrency);
+  const [paymentTerms, setPaymentTerms] = useState(
+  String(settings.paymentTerms)
+);
   const calculateDueDate = (
   invoiceDateValue: string,
   paymentTermsValue: string
@@ -119,7 +123,7 @@ const [products] = useState<Product[]>(() =>
       description: "",
       quantity: 1,
       unitPrice: 0,
-      taxRate: 18,
+      taxRate: settings.defaultTaxRate,
     },
   ]);
 
@@ -350,7 +354,10 @@ const outstanding = Object.entries(
   outstandingByCurrency
 )
   .map(([currencyCode, amount]) =>
-    formatCurrency(amount, currencyCode)
+    formatCurrency(
+  amount,
+  currencyCode as Invoice["currency"]
+)
   )
   .join(" • ");
 
@@ -371,14 +378,20 @@ const outstanding = Object.entries(
   );
 
   setInvoiceNumber(
-    `INV-${highestInvoiceNumber + 1}`
-  );
+  `${settings.invoicePrefix}${highestInvoiceNumber + 1}`
+);
 
-    setInvoiceDate(
-      new Date().toISOString().split("T")[0]
-    );
+    const newInvoiceDate = new Date().toISOString().split("T")[0];
 
-    setDueDate("");
+setInvoiceDate(newInvoiceDate);
+setDueDate(
+  calculateDueDate(
+    newInvoiceDate,
+    String(settings.paymentTerms)
+  )
+);
+setCurrency(settings.defaultCurrency);
+setPaymentTerms(String(settings.paymentTerms));
     setCustomer("");
 
     setItems([
@@ -387,7 +400,7 @@ const outstanding = Object.entries(
         description: "",
         quantity: 1,
         unitPrice: 0,
-        taxRate: 18,
+        taxRate: settings.defaultTaxRate,
       },
     ]);
   };
@@ -1456,7 +1469,7 @@ const matchesStatus =
                     onChange={(e) => {
   const newCurrency = e.target.value;
 
-  setCurrency(newCurrency);
+  setCurrency(newCurrency as Invoice["currency"]);
 
   setItems((current) =>
     current.map((item) => ({
