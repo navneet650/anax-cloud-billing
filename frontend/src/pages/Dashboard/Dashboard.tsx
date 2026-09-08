@@ -242,7 +242,7 @@ setDraftCount(draftInvoices.length);
       <div style={styles.heroSection}>
         <div>
           <div style={styles.eyebrow}>
-            ANAX CLOUD BILLING
+            ANAXBILL
           </div>
 
           <h1 style={styles.pageTitle}>

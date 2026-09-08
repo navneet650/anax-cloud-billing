@@ -41,9 +41,9 @@ export default function App() {
             textAlign: "center",
           }}
         >
-          <h1>Anax Cloud Billing</h1>
+          <h1>AnaxBill</h1>
 
-          <p>Cloud Native GST Billing Platform</p>
+          <p>Cloud Billing & Invoicing Platform</p>
 
           <button
             onClick={login}

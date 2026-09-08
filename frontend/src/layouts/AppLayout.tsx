@@ -43,7 +43,7 @@ export default function AppLayout({ children }: Props) {
     lineHeight: 1.2,
   }}
 >
-  Anax Cloud Billing
+  AnaxBill
 </h2>
 
         <hr style={{ margin: "20px 0", opacity: 0.3 }} />
