@@ -1116,6 +1116,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: "12px",
     minWidth: 0,
+    textAlign: "left",
   },
 
   invoiceAvatar: {

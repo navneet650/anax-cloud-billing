@@ -788,6 +788,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 10,
+    textAlign: "left",
   },
 
   avatar: {
@@ -812,6 +813,7 @@ const styles: Record<string, React.CSSProperties> = {
   contactName: {
     fontSize: 12,
     color: "#94a3b8",
+    textAlign: "left",
   },
 
   contactInfo: {
