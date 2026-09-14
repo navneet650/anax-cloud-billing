@@ -348,6 +348,175 @@ export default function Settings() {
             placeholder="Business address"
           />
         </div>
+                {/* BANK DETAILS */}
+        <div
+          style={{
+            marginTop: "24px",
+            paddingTop: "24px",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 16px",
+              fontSize: "16px",
+              color: "#111827",
+            }}
+          >
+            Bank Details
+          </h3>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(2, minmax(0, 1fr))",
+              gap: "0 22px",
+            }}
+          >
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
+                Bank Name
+              </label>
+              <input
+                style={inputStyle}
+                value={settings.bankName}
+                onChange={(e) =>
+                  updateField(
+                    "bankName",
+                    e.target.value
+                  )
+                }
+                placeholder="Bank name"
+              />
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
+                Branch
+              </label>
+              <input
+                style={inputStyle}
+                value={settings.bankBranch}
+                onChange={(e) =>
+                  updateField(
+                    "bankBranch",
+                    e.target.value
+                  )
+                }
+                placeholder="Bank branch"
+              />
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
+                Account Number
+              </label>
+              <input
+                style={inputStyle}
+                value={settings.accountNumber}
+                onChange={(e) =>
+                  updateField(
+                    "accountNumber",
+                    e.target.value
+                  )
+                }
+                placeholder="Bank account number"
+              />
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>
+                IFSC
+              </label>
+              <input
+                style={inputStyle}
+                value={settings.ifsc}
+                onChange={(e) =>
+                  updateField(
+                    "ifsc",
+                    e.target.value.toUpperCase()
+                  )
+                }
+                placeholder="IFSC code"
+              />
+            </div>
+          </div>
+        </div>
+                {/* INVOICE LOGO */}
+        <div
+          style={{
+            marginTop: "24px",
+            paddingTop: "24px",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: "16px",
+              color: "#111827",
+            }}
+          >
+            Invoice Logo
+          </h3>
+
+          <p
+            style={{
+              margin: "0 0 16px",
+              color: "#6b7280",
+              fontSize: "13px",
+            }}
+          >
+            Logo displayed on your invoices.
+          </p>
+
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+
+              if (!file) {
+                return;
+              }
+
+              if (file.size > 2 * 1024 * 1024) {
+                alert("Logo must be smaller than 2 MB.");
+                e.target.value = "";
+                return;
+              }
+
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                updateField(
+                  "logo",
+                  String(reader.result ?? "")
+                );
+              };
+
+              reader.readAsDataURL(file);
+            }}
+          />
+
+          {settings.logo && (
+            <div style={{ marginTop: "16px" }}>
+              <img
+                src={settings.logo}
+                alt="Invoice logo"
+                style={{
+                  maxWidth: "180px",
+                  maxHeight: "80px",
+                  objectFit: "contain",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  padding: "8px",
+                }}
+              />
+            </div>
+          )}
+        </div>
 
         <div
           style={{

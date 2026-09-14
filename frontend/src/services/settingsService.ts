@@ -10,6 +10,13 @@ export type BusinessSettings = {
   city: string;
   state: string;
   pincode: string;
+
+  bankName: string;
+  bankBranch: string;
+  accountNumber: string;
+  ifsc: string;
+  logo: string;
+
   defaultCurrency: "INR" | "AED" | "USD" | "EUR" | "GBP";
   paymentTerms: number;
   defaultTaxRate: number;
@@ -29,7 +36,14 @@ const defaultSettings: BusinessSettings = {
   address: "",
   city: "",
   state: "",
-  pincode: "",
+    pincode: "",
+
+  bankName: "",
+  bankBranch: "",
+  accountNumber: "",
+  ifsc: "",
+  logo: "",
+
   defaultCurrency: "INR",
   paymentTerms: 30,
   defaultTaxRate: 18,

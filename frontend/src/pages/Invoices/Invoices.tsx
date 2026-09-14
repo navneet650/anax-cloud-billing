@@ -100,6 +100,10 @@ const settings = settingsService.get();
   const [paymentTerms, setPaymentTerms] = useState(
   String(settings.paymentTerms)
 );
+const [poNumber, setPoNumber] = useState("");
+const [placeOfSupply, setPlaceOfSupply] = useState("");
+const [invoiceDescription, setInvoiceDescription] = useState("");
+const [notes, setNotes] = useState("");
   const calculateDueDate = (
   invoiceDateValue: string,
   paymentTermsValue: string
@@ -309,22 +313,51 @@ const selectProduct = (
   };
 
   const subtotal = items.reduce(
-    (sum, item) =>
-      sum + item.quantity * item.unitPrice,
-    0
+  (sum, item) =>
+    sum + item.quantity * item.unitPrice,
+  0
+);
+
+const supplierStateCode =
+  settings.gstin.trim().slice(0, 2);
+
+const customerStateCode =
+  selectedCustomer?.gstin?.trim().slice(0, 2) || "";
+
+const placeOfSupplyStateCode =
+  placeOfSupply.trim().match(/^\d{2}/)?.[0] || "";
+
+const isIntraState =
+  /^\d{2}$/.test(supplierStateCode) &&
+  (
+    /^\d{2}$/.test(customerStateCode)
+      ? supplierStateCode === customerStateCode
+      : supplierStateCode === placeOfSupplyStateCode
   );
 
-  const taxTotal = items.reduce(
-    (sum, item) =>
-      sum +
-      (item.quantity *
-        item.unitPrice *
-        item.taxRate) /
-        100,
-    0
-  );
+const taxTotal = items.reduce(
+  (sum, item) =>
+    sum +
+    (item.quantity *
+      item.unitPrice *
+      item.taxRate) /
+      100,
+  0
+);
 
-  const total = subtotal + taxTotal;
+const cgstTotal = isIntraState
+  ? taxTotal / 2
+  : 0;
+
+const sgstTotal = isIntraState
+  ? taxTotal / 2
+  : 0;
+
+const igstTotal = isIntraState
+  ? 0
+  : taxTotal;
+
+const total = subtotal + taxTotal;
 
   const paidCount = invoices.filter(
     (invoice) => invoice.status === "Paid"
@@ -393,6 +426,10 @@ setDueDate(
 setCurrency(settings.defaultCurrency);
 setPaymentTerms(String(settings.paymentTerms));
     setCustomer("");
+    setPoNumber("");
+setPlaceOfSupply("");
+setInvoiceDescription("");
+setNotes("");
 
     setItems([
       {
@@ -412,6 +449,10 @@ setPaymentTerms(String(settings.paymentTerms));
   setInvoiceDate(invoice.date);
   setDueDate(invoice.dueDate);
   setCurrency(invoice.currency);
+  setPoNumber(invoice.poNumber ?? "");
+setPlaceOfSupply(invoice.placeOfSupply ?? "");
+setInvoiceDescription(invoice.invoiceDescription ?? "");
+setNotes(invoice.notes ?? "");
 
   const matchingCustomer = customers.find(
     (item) => item.companyName === invoice.customer
@@ -489,38 +530,144 @@ const downloadInvoicePdf = (invoice: Invoice) => {
     pdf.line(margin, y, rightMargin, y);
   };
 
-  /* ---------- HEADER ---------- */
+    /* ---------- HEADER ---------- */
 
-  pdf.setFillColor(31, 41, 55);
-  pdf.rect(0, 0, pageWidth, 34, "F");
+  const businessName =
+    settings.businessName?.trim() || "Anax Enterprise";
 
-  pdf.setTextColor(255, 255, 255);
+  const legalName =
+    settings.legalName?.trim() || "";
+
+  const businessAddress = [
+    settings.address,
+    settings.city,
+    settings.state,
+    settings.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const businessContact = [
+    settings.phone
+      ? `Phone: ${settings.phone}`
+      : "",
+    settings.email
+      ? `Email: ${settings.email}`
+      : "",
+    settings.website
+      ? `Web: ${settings.website}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("  |  ");
+
+  /* Header area */
+  pdf.setDrawColor(220, 224, 230);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, 12, rightMargin, 12);
+
+  /* Business name */
+  pdf.setTextColor(31, 41, 55);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(20);
-  pdf.text("AnaxBill", margin, 15);
+  pdf.setFontSize(18);
+  pdf.text(businessName, margin, 22);
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.text(
-    "Cloud Billing & Invoicing Platform",
-    margin,
-    23
-  );
+  /* Legal name */
+  if (legalName && legalName !== businessName) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.text(legalName, margin, 28);
+  }
 
+  /* Address */
+  let headerY = legalName && legalName !== businessName
+    ? 34
+    : 29;
+
+  if (businessAddress) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    const addressLines = pdf.splitTextToSize(
+      businessAddress,
+      105
+    );
+    pdf.text(addressLines, margin, headerY);
+    headerY += addressLines.length * 4;
+  }
+
+  /* GSTIN */
+  if (settings.gstin) {
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.text(
+      `GSTIN: ${settings.gstin}`,
+      margin,
+      headerY + 4
+    );
+    headerY += 8;
+  }
+
+  /* Contact information */
+  if (businessContact) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(7.5);
+    const contactLines = pdf.splitTextToSize(
+      businessContact,
+      105
+    );
+    pdf.text(
+      contactLines,
+      margin,
+      headerY + 1
+    );
+    headerY += contactLines.length * 4;
+  }
+
+  /* Invoice title on right */
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
+  pdf.setFontSize(17);
   pdf.text(
     "TAX INVOICE",
     rightMargin,
-    18,
+    22,
     { align: "right" }
   );
 
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8);
+  pdf.text(
+    "Original for Recipient",
+    rightMargin,
+    29,
+    { align: "right" }
+  );
+
+  /* Logo */
+  if (settings.logo) {
+    try {
+      pdf.addImage(
+        settings.logo,
+        "AUTO",
+        rightMargin - 38,
+        34,
+        38,
+        22,
+        undefined,
+        "FAST"
+      );
+    } catch (error) {
+      console.warn(
+        "Unable to add invoice logo:",
+        error
+      );
+    }
+  }
+
   pdf.setTextColor(31, 41, 55);
 
-  let y = 48;
+  let y = Math.max(headerY + 10, 62);
 
-  /* ---------- INVOICE DETAILS ---------- */
+   /* ---------- INVOICE DETAILS ---------- */
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(10);
@@ -528,18 +675,21 @@ const downloadInvoicePdf = (invoice: Invoice) => {
 
   y += 8;
 
+  const detailsLeftX = margin;
+  const detailsRightX = 110;
+
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
 
   pdf.text(
     `Invoice Number: ${invoice.invoiceNumber}`,
-    margin,
+    detailsLeftX,
     y
   );
 
   pdf.text(
     `Invoice Date: ${invoice.date}`,
-    110,
+    detailsRightX,
     y
   );
 
@@ -547,15 +697,33 @@ const downloadInvoicePdf = (invoice: Invoice) => {
 
   pdf.text(
     `Due Date: ${invoice.dueDate || "Due on receipt"}`,
-    margin,
+    detailsLeftX,
     y
   );
 
   pdf.text(
     `Currency: ${invoice.currency}`,
-    110,
+    detailsRightX,
     y
   );
+
+  y += 7;
+
+  if (invoice.poNumber) {
+    pdf.text(
+      `PO Number: ${invoice.poNumber}`,
+      detailsLeftX,
+      y
+    );
+  }
+
+  if (invoice.placeOfSupply) {
+    pdf.text(
+      `Place of Supply: ${invoice.placeOfSupply}`,
+      detailsRightX,
+      y
+    );
+  }
 
   y += 12;
 
@@ -563,101 +731,158 @@ const downloadInvoicePdf = (invoice: Invoice) => {
 
   y += 12;
 
-  /* ---------- CUSTOMER ---------- */
+    /* ---------- CUSTOMER ---------- */
 
-const selectedPdfCustomer = customers.find(
-  (customer) =>
-    customer.companyName === invoice.customer
-);
-
-pdf.setFont("helvetica", "bold");
-pdf.setFontSize(10);
-pdf.text("Bill To", margin, y);
-
-y += 8;
-
-pdf.setFont("helvetica", "bold");
-pdf.setFontSize(11);
-pdf.text(invoice.customer, margin, y);
-
-if (selectedPdfCustomer) {
-  y += 7;
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-
-  if (selectedPdfCustomer.contactPerson) {
-    pdf.text(
-      `Contact: ${selectedPdfCustomer.contactPerson}`,
-      margin,
-      y
-    );
-    y += 6;
-  }
-
-  const addressParts = [
-    selectedPdfCustomer.addressLine1,
-    selectedPdfCustomer.addressLine2,
-    selectedPdfCustomer.city,
-    selectedPdfCustomer.state,
-    selectedPdfCustomer.pincode,
-    selectedPdfCustomer.country,
-  ].filter(Boolean);
-
-  if (addressParts.length > 0) {
-    const address = addressParts.join(", ");
-
-    const addressLines = pdf.splitTextToSize(
-      address,
-      85
-    );
-
-    pdf.text(addressLines, margin, y);
-    y += addressLines.length * 6;
-  }
-
-  if (selectedPdfCustomer.gstin) {
-    pdf.text(
-      `GSTIN: ${selectedPdfCustomer.gstin}`,
-      margin,
-      y
-    );
-    y += 6;
-  }
-
-  if (selectedPdfCustomer.email) {
-    pdf.text(
-      `Email: ${selectedPdfCustomer.email}`,
-      margin,
-      y
-    );
-    y += 6;
-  }
-
-  if (selectedPdfCustomer.mobile) {
-    pdf.text(
-      `Mobile: ${selectedPdfCustomer.mobile}`,
-      margin,
-      y
-    );
-    y += 6;
-  }
-} else {
-  y += 7;
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-
-  pdf.text(
-    "Customer details not available",
-    margin,
-    y
+  const selectedPdfCustomer = customers.find(
+    (customer) =>
+      customer.companyName === invoice.customer
   );
 
-  y += 6;
-}
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(10);
+  pdf.text("Bill To", margin, y);
 
-y += 8;
+  y += 6;
+
+  /* Customer box */
+  const customerBoxTop = y;
+  const customerBoxWidth = pageWidth - margin * 2;
+
+  let customerBoxHeight = 42;
+
+  if (selectedPdfCustomer) {
+    const addressParts = [
+      selectedPdfCustomer.addressLine1,
+      selectedPdfCustomer.addressLine2,
+      selectedPdfCustomer.city,
+      selectedPdfCustomer.state,
+      selectedPdfCustomer.pincode,
+      selectedPdfCustomer.country,
+    ].filter(Boolean);
+
+    const address = addressParts.join(", ");
+
+    const addressLines = address
+      ? pdf.splitTextToSize(address, 105)
+      : [];
+
+    customerBoxHeight = Math.max(
+      42,
+      24 + addressLines.length * 4
+    );
+  }
+
+  pdf.setFillColor(249, 250, 251);
+  pdf.setDrawColor(220, 224, 230);
+  pdf.roundedRect(
+    margin,
+    customerBoxTop,
+    customerBoxWidth,
+    customerBoxHeight,
+    2,
+    2,
+    "FD"
+  );
+
+  let customerY = customerBoxTop + 9;
+
+  pdf.setTextColor(31, 41, 55);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(11);
+  pdf.text(
+    invoice.customer,
+    margin + 5,
+    customerY
+  );
+
+  customerY += 7;
+
+  if (selectedPdfCustomer) {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8.5);
+
+    /* Contact person */
+    if (selectedPdfCustomer.contactPerson) {
+      pdf.text(
+        `Contact: ${selectedPdfCustomer.contactPerson}`,
+        margin + 5,
+        customerY
+      );
+      customerY += 5;
+    }
+
+    /* Address */
+    const addressParts = [
+      selectedPdfCustomer.addressLine1,
+      selectedPdfCustomer.addressLine2,
+      selectedPdfCustomer.city,
+      selectedPdfCustomer.state,
+      selectedPdfCustomer.pincode,
+      selectedPdfCustomer.country,
+    ].filter(Boolean);
+
+    if (addressParts.length > 0) {
+      const address = addressParts.join(", ");
+
+      const addressLines = pdf.splitTextToSize(
+        address,
+        105
+      );
+
+      pdf.text(
+        addressLines,
+        margin + 5,
+        customerY
+      );
+
+      customerY += addressLines.length * 4;
+    }
+
+    /* GSTIN */
+    if (selectedPdfCustomer.gstin) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        `GSTIN: ${selectedPdfCustomer.gstin}`,
+        margin + 5,
+        customerY + 1
+      );
+    }
+
+    /* Contact details on right */
+    let contactY = customerBoxTop + 10;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8.5);
+
+    if (selectedPdfCustomer.email) {
+      pdf.text(
+        `Email: ${selectedPdfCustomer.email}`,
+        rightMargin - 5,
+        contactY,
+        { align: "right" }
+      );
+      contactY += 5;
+    }
+
+    if (selectedPdfCustomer.mobile) {
+      pdf.text(
+        `Mobile: ${selectedPdfCustomer.mobile}`,
+        rightMargin - 5,
+        contactY,
+        { align: "right" }
+      );
+    }
+  } else {
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8.5);
+    pdf.text(
+      "Customer details not available",
+      margin + 5,
+      customerY
+    );
+  }
+
+  y = customerBoxTop + customerBoxHeight + 10;
 
   /* ---------- ITEMS TABLE ---------- */
 
@@ -743,12 +968,16 @@ y += 8;
       pdf.setFont("helvetica", "normal");
     }
 
-    const description =
-      item.description.length > 38
-        ? `${item.description.substring(0, 35)}...`
-        : item.description;
+        const descriptionLines = pdf.splitTextToSize(
+      item.description,
+      78
+    );
 
-    pdf.text(description, descriptionX, y);
+    pdf.text(
+      descriptionLines,
+      descriptionX,
+      y
+    );
 
     pdf.text(
       String(item.quantity),
@@ -775,23 +1004,62 @@ y += 8;
       { align: "right" }
     );
 
-    y += 8;
+    const rowHeight = Math.max(
+      8,
+      descriptionLines.length * 5
+    );
 
-    drawLine(y - 4);
+    y += rowHeight;
+
+    drawLine(y - 3);
   });
 
-  /* ---------- TOTALS ---------- */
+    /* ---------- TOTALS ---------- */
+
+  const supplierStateCode =
+    settings.gstin.trim().slice(0, 2);
+
+  const customerStateCode =
+    selectedPdfCustomer?.gstin?.trim().slice(0, 2) || "";
+
+  const placeOfSupplyStateCode =
+    invoice.placeOfSupply?.trim().match(/^\d{2}/)?.[0] || "";
+
+  const isIntraState =
+    /^\d{2}$/.test(supplierStateCode) &&
+    (
+      /^\d{2}$/.test(customerStateCode)
+        ? supplierStateCode === customerStateCode
+        : supplierStateCode === placeOfSupplyStateCode
+    );
+
+  const cgstTotal = isIntraState
+    ? taxTotal / 2
+    : 0;
+
+  const sgstTotal = isIntraState
+    ? taxTotal / 2
+    : 0;
+
+  const igstTotal = isIntraState
+    ? 0
+    : taxTotal;
 
   y += 10;
 
   const totalsX = 130;
-  const totalsValueX = rightMargin;
+  const totalsValueX = rightMargin - 2;
 
   pdf.setFontSize(9);
-
   pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(31, 41, 55);
 
-  pdf.text("Subtotal", totalsX, y);
+  /* Subtotal */
+  pdf.text(
+    "Subtotal",
+    totalsX,
+    y
+  );
 
   pdf.text(
     `${symbol} ${formatAmount(subtotal)}`,
@@ -800,25 +1068,66 @@ y += 8;
     { align: "right" }
   );
 
-  y += 8;
+  y += 7;
 
-  pdf.text("Tax", totalsX, y);
+  /* GST */
+  if (isIntraState) {
+    pdf.text(
+      "CGST",
+      totalsX,
+      y
+    );
 
-  pdf.text(
-    `${symbol} ${formatAmount(taxTotal)}`,
-    totalsValueX,
-    y,
-    { align: "right" }
-  );
+    pdf.text(
+      `${symbol} ${formatAmount(cgstTotal)}`,
+      totalsValueX,
+      y,
+      { align: "right" }
+    );
 
-  y += 10;
+    y += 7;
+
+    pdf.text(
+      "SGST",
+      totalsX,
+      y
+    );
+
+    pdf.text(
+      `${symbol} ${formatAmount(sgstTotal)}`,
+      totalsValueX,
+      y,
+      { align: "right" }
+    );
+  } else {
+    pdf.text(
+      "IGST",
+      totalsX,
+      y
+    );
+
+    pdf.text(
+      `${symbol} ${formatAmount(igstTotal)}`,
+      totalsValueX,
+      y,
+      { align: "right" }
+    );
+  }
+
+  y += 11;
+
+  /* Grand Total */
+  const grandTotalTop = y - 6;
+  const grandTotalWidth =
+    rightMargin - totalsX;
 
   pdf.setFillColor(31, 41, 55);
+
   pdf.roundedRect(
-    totalsX - 5,
-    y - 6,
-    rightMargin - totalsX + 5,
-    15,
+    totalsX,
+    grandTotalTop,
+    grandTotalWidth,
+    16,
     2,
     2,
     "F"
@@ -830,18 +1139,16 @@ y += 8;
 
   pdf.text(
     "Grand Total",
-    totalsX,
+    totalsX + 5,
     y + 4
   );
 
   pdf.text(
     `${symbol} ${formatAmount(invoice.amount)}`,
-    totalsValueX,
+    rightMargin - 5,
     y + 4,
     { align: "right" }
   );
-
-  /* ---------- FOOTER ---------- */
 
   pdf.setTextColor(107, 114, 128);
   pdf.setFont("helvetica", "normal");
@@ -923,9 +1230,13 @@ if (!selectedCustomer) {
   id: editingInvoiceId ?? Date.now(),
   invoiceNumber,
   customer: selectedCustomer.companyName,
-  date: invoiceDate,
-  dueDate,
-  amount: total,
+        date: invoiceDate,
+      dueDate,
+      poNumber,
+      placeOfSupply,
+      invoiceDescription,
+      notes,
+      amount: total,
   currency: currency as
     | "INR"
     | "AED"
@@ -1364,6 +1675,60 @@ const matchesStatus =
                   />
                 </FormField>
               </div>
+                            <div style={styles.formGrid}>
+                <FormField label="PO Number">
+                  <input
+                    value={poNumber}
+                    onChange={(e) =>
+                      setPoNumber(e.target.value)
+                    }
+                    style={styles.input}
+                    placeholder="Purchase order number"
+                  />
+                </FormField>
+
+                <FormField label="Place of Supply">
+                  <input
+                    value={placeOfSupply}
+                    onChange={(e) =>
+                      setPlaceOfSupply(e.target.value)
+                    }
+                    style={styles.input}
+                    placeholder="e.g. 08 - Rajasthan"
+                  />
+                </FormField>
+              </div>
+                            <div style={styles.formGrid}>
+                <FormField label="Invoice Description">
+                  <textarea
+                    value={invoiceDescription}
+                    onChange={(e) =>
+                      setInvoiceDescription(e.target.value)
+                    }
+                    style={{
+                      ...styles.input,
+                      minHeight: "80px",
+                      resize: "vertical",
+                    }}
+                    placeholder="Description or reference for this invoice"
+                  />
+                </FormField>
+
+                <FormField label="Notes / Terms & Conditions">
+                  <textarea
+                    value={notes}
+                    onChange={(e) =>
+                      setNotes(e.target.value)
+                    }
+                    style={{
+                      ...styles.input,
+                      minHeight: "80px",
+                      resize: "vertical",
+                    }}
+                    placeholder="Payment notes, terms & conditions, or other information"
+                  />
+                </FormField>
+              </div>
 
               {/* CUSTOMER */}
               <SectionTitle title="Customer" />
@@ -1755,19 +2120,30 @@ const matchesStatus =
               {/* TOTALS */}
               <div style={styles.totalsArea}>
                 <div style={styles.totalsBox}>
-                  <div style={styles.totalRow}>
-                    <span>Subtotal</span>
-                    <strong>
-                      {formatCurrency(subtotal)}
-                    </strong>
-                  </div>
+                  {isIntraState ? (
+  <>
+    <div style={styles.totalRow}>
+      <span>CGST</span>
+      <strong>
+        {formatCurrency(cgstTotal)}
+      </strong>
+    </div>
 
-                  <div style={styles.totalRow}>
-                    <span>Tax</span>
-                    <strong>
-                      {formatCurrency(taxTotal)}
-                    </strong>
-                  </div>
+    <div style={styles.totalRow}>
+      <span>SGST</span>
+      <strong>
+        {formatCurrency(sgstTotal)}
+      </strong>
+    </div>
+  </>
+) : (
+  <div style={styles.totalRow}>
+    <span>IGST</span>
+    <strong>
+      {formatCurrency(igstTotal)}
+    </strong>
+  </div>
+)}
 
                   <div
                     style={{
