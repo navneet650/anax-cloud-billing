@@ -2,6 +2,7 @@ export type InvoiceItem = {
   id: number;
   productId?: string;
   description: string;
+  hsnSac?: string;
   quantity: number;
   unitPrice: number;
   taxRate: number;
