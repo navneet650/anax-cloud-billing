@@ -517,6 +517,55 @@ export default function Settings() {
             </div>
           )}
         </div>
+                {/* TERMS & CONDITIONS */}
+        <div
+          style={{
+            marginTop: "24px",
+            paddingTop: "24px",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: "16px",
+              color: "#111827",
+            }}
+          >
+            Terms & Conditions
+          </h3>
+
+          <p
+            style={{
+              margin: "0 0 16px",
+              color: "#6b7280",
+              fontSize: "13px",
+            }}
+          >
+            These terms will appear on your invoices.
+          </p>
+
+          <textarea
+            style={{
+              ...inputStyle,
+              minHeight: "150px",
+              resize: "vertical",
+              fontFamily: "inherit",
+              lineHeight: 1.5,
+            }}
+            value={settings.termsAndConditions}
+            onChange={(e) =>
+              updateField(
+                "termsAndConditions",
+                e.target.value
+              )
+            }
+            placeholder={
+              "Enter one term per line.\n" +
+              "Example: Payment is due within the agreed credit period."
+            }
+          />
+        </div>
 
         <div
           style={{

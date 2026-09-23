@@ -533,48 +533,62 @@ const updateInvoiceStatus = (
 
 
   const drawPanel = (
-    x: number,
-    panelY: number,
-    width: number,
-    height: number,
-    title: string
-  ) => {
-    pdf.setFillColor(238, 244, 250);
-    pdf.setDrawColor(205, 218, 230);
-    pdf.setLineWidth(0.3);
+  x: number,
+  panelY: number,
+  width: number,
+  height: number,
+  title: string
+) => {
+  // White panel body with a thin border
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(205, 218, 230);
+  pdf.setLineWidth(0.3);
 
-    pdf.roundedRect(
-      x,
-      panelY,
-      width,
-      height,
-      1.5,
-      1.5,
-      "FD"
-    );
+  pdf.roundedRect(
+    x,
+    panelY,
+    width,
+    height,
+    1.5,
+    1.5,
+    "FD"
+  );
 
-    pdf.setFillColor(224, 235, 245);
+  // Colored header only
+  pdf.setFillColor(224, 235, 245);
 
-    pdf.roundedRect(
-      x,
-      panelY,
-      width,
-      8,
-      1.5,
-      1.5,
-      "F"
-    );
+  pdf.rect(
+    x,
+    panelY,
+    width,
+    8,
+    "F"
+  );
 
-    pdf.setTextColor(18, 49, 85);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8.5);
+  // Restore the panel border over the header
+  pdf.setDrawColor(205, 218, 230);
+  pdf.setLineWidth(0.3);
 
-    pdf.text(
-      title,
-      x + 4,
-      panelY + 5.3
-    );
-  };
+  pdf.roundedRect(
+    x,
+    panelY,
+    width,
+    height,
+    1.5,
+    1.5,
+    "S"
+  );
+
+  pdf.setTextColor(18, 49, 85);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8.5);
+
+  pdf.text(
+    title,
+    x + 4,
+    panelY + 5.3
+  );
+};
 
   /* ---------- HEADER ---------- */
 
@@ -747,27 +761,42 @@ const updateInvoiceStatus = (
   /* ---------- LOGO ---------- */
 
   if (settings.logo) {
-    try {
-      const logoWidth = 48;
-      const logoHeight = 28;
+  try {
+    const logoWidth = 48;
+    const logoHeight = 28;
 
-      pdf.addImage(
-        settings.logo,
-        "AUTO",
-        rightMargin - logoWidth,
-        34,
-        logoWidth,
-        logoHeight,
-        undefined,
-        "FAST"
-      );
-    } catch (error) {
-      console.warn(
-        "Unable to add invoice logo:",
-        error
-      );
+    const imageProperties =
+      pdf.getImageProperties(settings.logo);
+
+    const imageRatio =
+      imageProperties.width /
+      imageProperties.height;
+
+    let finalWidth = logoWidth;
+    let finalHeight = finalWidth / imageRatio;
+
+    if (finalHeight > logoHeight) {
+      finalHeight = logoHeight;
+      finalWidth = finalHeight * imageRatio;
     }
+
+    pdf.addImage(
+      settings.logo,
+      "AUTO",
+      rightMargin - finalWidth,
+      34,
+      finalWidth,
+      finalHeight,
+      undefined,
+      "FAST"
+    );
+  } catch (error) {
+    console.warn(
+      "Unable to add invoice logo:",
+      error
+    );
   }
+}
 
   /* ---------- DETAILS + BILL TO ---------- */
 
@@ -790,27 +819,191 @@ const updateInvoiceStatus = (
   const customerX =
     margin + panelWidth + panelGap;
 
-  let customerAddressLines: string[] = [];
+    const customerAddressLines = selectedPdfCustomer
+    ? [
+        selectedPdfCustomer.addressLine1,
+        selectedPdfCustomer.addressLine2,
+        [
+          selectedPdfCustomer.city,
+          selectedPdfCustomer.state,
+          selectedPdfCustomer.pincode,
+        ]
+          .filter(Boolean)
+          .join(", "),
+        selectedPdfCustomer.country,
+      ].filter(
+  (value): value is string =>
+    Boolean(value)
+)
+: [];
 
   if (selectedPdfCustomer) {
-    const addressParts = [
-      selectedPdfCustomer.addressLine1,
-      selectedPdfCustomer.addressLine2,
-      selectedPdfCustomer.city,
-      selectedPdfCustomer.state,
-      selectedPdfCustomer.pincode,
-      selectedPdfCustomer.country,
-    ].filter(Boolean);
+    let customerY = panelTop + 15;
 
-    const address =
-      addressParts.join(", ");
+    const customerLabelX = customerX + 4;
+    const customerColonX = customerX + 27;
+    const customerValueX = customerX + 30;
+    const customerTextWidth = panelWidth - 34;
 
-    if (address) {
-      customerAddressLines =
+    // Customer name
+    pdf.setTextColor(18, 49, 85);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(9);
+
+    pdf.text(
+      invoice.customer,
+      customerLabelX,
+      customerY
+    );
+
+    customerY += 6;
+
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(45, 45, 45);
+
+    // Contact
+    if (selectedPdfCustomer.contactPerson) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        "Contact",
+        customerLabelX,
+        customerY
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        ":",
+        customerColonX,
+        customerY
+      );
+
+      pdf.text(
+        selectedPdfCustomer.contactPerson,
+        customerValueX,
+        customerY
+      );
+
+      customerY += 5;
+    }
+
+    // Address
+    if (customerAddressLines.length > 0) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        "Address",
+        customerLabelX,
+        customerY
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        ":",
+        customerColonX,
+        customerY
+      );
+
+      const addressText =
+        customerAddressLines.join(", ");
+
+      const addressLines =
         pdf.splitTextToSize(
-          address,
-          panelWidth - 27
+          addressText,
+          customerTextWidth
         );
+
+      pdf.text(
+        addressLines[0] || "",
+        customerValueX,
+        customerY
+      );
+
+      for (
+        let i = 1;
+        i < addressLines.length;
+        i++
+      ) {
+        customerY += 4;
+        pdf.text(
+          addressLines[i],
+          customerValueX,
+          customerY
+        );
+      }
+
+      customerY += 5;
+    }
+
+    // GSTIN
+    if (selectedPdfCustomer.gstin) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        "GSTIN",
+        customerLabelX,
+        customerY
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        ":",
+        customerColonX,
+        customerY
+      );
+
+      pdf.text(
+        selectedPdfCustomer.gstin,
+        customerValueX,
+        customerY
+      );
+
+      customerY += 5;
+    }
+
+    // Email
+    if (selectedPdfCustomer.email) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        "Email",
+        customerLabelX,
+        customerY
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        ":",
+        customerColonX,
+        customerY
+      );
+
+      pdf.text(
+        selectedPdfCustomer.email,
+        customerValueX,
+        customerY
+      );
+
+      customerY += 5;
+    }
+
+    // Mobile
+    if (selectedPdfCustomer.mobile) {
+      pdf.setFont("helvetica", "bold");
+      pdf.text(
+        "Mobile",
+        customerLabelX,
+        customerY
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        ":",
+        customerColonX,
+        customerY
+      );
+
+      pdf.text(
+        selectedPdfCustomer.mobile,
+        customerValueX,
+        customerY
+      );
     }
   }
 
@@ -923,196 +1116,6 @@ const updateInvoiceStatus = (
       detailsY += 6;
     }
   );
-
-  /* Bill To */
-
-  if (selectedPdfCustomer) {
-    let customerY =
-      panelTop + 15;
-
-    pdf.setTextColor(18, 49, 85);
-    pdf.setFont(
-      "helvetica",
-      "bold"
-    );
-    pdf.setFontSize(9);
-
-    pdf.text(
-      invoice.customer,
-      customerX + 4,
-      customerY
-    );
-
-    if (selectedPdfCustomer.gstin) {
-      pdf.setFontSize(7.5);
-
-      pdf.text(
-        `GSTIN: ${selectedPdfCustomer.gstin}`,
-        customerX +
-          panelWidth -
-          4,
-        customerY,
-        { align: "right" }
-      );
-    }
-
-    customerY += 6;
-
-    const customerLabelX =
-      customerX + 4;
-
-    const customerValueX =
-      customerX + 25;
-
-    if (
-      selectedPdfCustomer.contactPerson
-    ) {
-      pdf.setFont(
-        "helvetica",
-        "bold"
-      );
-      pdf.setFontSize(7.8);
-
-      pdf.text(
-        "Contact",
-        customerLabelX,
-        customerY
-      );
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      pdf.text(
-        ":",
-        customerX + 20,
-        customerY
-      );
-
-      pdf.text(
-        selectedPdfCustomer.contactPerson,
-        customerValueX,
-        customerY
-      );
-
-      customerY += 5;
-    }
-
-    if (
-      customerAddressLines.length > 0
-    ) {
-      pdf.setFont(
-        "helvetica",
-        "bold"
-      );
-      pdf.setFontSize(7.8);
-
-      pdf.text(
-        "Address",
-        customerLabelX,
-        customerY
-      );
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      pdf.text(
-        ":",
-        customerX + 20,
-        customerY
-      );
-
-      pdf.text(
-        customerAddressLines,
-        customerValueX,
-        customerY
-      );
-
-      customerY +=
-        customerAddressLines.length *
-        4;
-    }
-
-    if (
-      selectedPdfCustomer.email
-    ) {
-      pdf.setFont(
-        "helvetica",
-        "bold"
-      );
-      pdf.setFontSize(7.8);
-
-      pdf.text(
-        "Email",
-        customerLabelX,
-        customerY
-      );
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      pdf.text(
-        ":",
-        customerX + 20,
-        customerY
-      );
-
-      pdf.text(
-        selectedPdfCustomer.email,
-        customerValueX,
-        customerY
-      );
-    }
-
-    if (
-      selectedPdfCustomer.mobile
-    ) {
-      pdf.setFont(
-        "helvetica",
-        "bold"
-      );
-      pdf.setFontSize(7.8);
-
-      pdf.text(
-        "Mobile",
-        customerX +
-          panelWidth -
-          50,
-        customerY
-      );
-
-      pdf.setFont(
-        "helvetica",
-        "normal"
-      );
-
-      pdf.text(
-        selectedPdfCustomer.mobile,
-        customerX +
-          panelWidth -
-          4,
-        customerY,
-        { align: "right" }
-      );
-    }
-  } else {
-    pdf.setFont(
-      "helvetica",
-      "normal"
-    );
-    pdf.setFontSize(8);
-
-    pdf.text(
-      "Customer details not available",
-      customerX + 4,
-      panelTop + 16
-    );
-  }
 
   let y =
     panelTop +
@@ -1616,10 +1619,9 @@ const updateInvoiceStatus = (
     );
 
   const hasNotes =
-    Boolean(
-      invoice.notes?.trim()
-    );
-
+  Boolean(
+    settings.termsAndConditions?.trim()
+  );
   if (
     hasBankDetails ||
     hasNotes
@@ -1669,12 +1671,12 @@ const updateInvoiceStatus = (
       );
 
     const notesWrapped =
-      hasNotes
-        ? pdf.splitTextToSize(
-            invoice.notes!.trim(),
-            halfWidth - 8
-          )
-        : [];
+  hasNotes
+    ? pdf.splitTextToSize(
+        settings.termsAndConditions.trim(),
+        halfWidth - 8
+      )
+    : [];
 
     const lowerHeight =
       Math.max(

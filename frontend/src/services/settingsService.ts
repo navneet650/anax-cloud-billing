@@ -21,6 +21,7 @@ export type BusinessSettings = {
   paymentTerms: number;
   defaultTaxRate: number;
   invoicePrefix: string;
+  termsAndConditions: string;
 };
 
 const STORAGE_KEY = "anax_cloud_billing_settings";
@@ -48,6 +49,12 @@ const defaultSettings: BusinessSettings = {
   paymentTerms: 30,
   defaultTaxRate: 18,
   invoicePrefix: "INV-",
+  termsAndConditions:
+  "1. Payment is due within the agreed credit period.\n" +
+  "2. Please make the payment to the above bank account.\n" +
+  "3. Any disputes are subject to Jaipur, Rajasthan jurisdiction only.\n" +
+  "4. This is a computer generated invoice and does not require a signature.\n" +
+  "5. For any queries, please contact us at navneet.bishnoi@gmail.com.",
 };
 
 export const settingsService = {

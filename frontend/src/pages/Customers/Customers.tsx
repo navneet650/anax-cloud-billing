@@ -28,6 +28,11 @@ export default function Customers() {
   const [mobile, setMobile] = useState("");
   const [gstin, setGstin] = useState("");
   const [state, setState] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+const [addressLine2, setAddressLine2] = useState("");
+const [city, setCity] = useState("");
+const [pincode, setPincode] = useState("");
+const [country, setCountry] = useState("India");
 
   const [rows, setRows] = useState<Customer[]>(() => {
     const savedCustomers = customerService.getAll();
@@ -93,14 +98,19 @@ export default function Customers() {
   });
 
   const resetForm = () => {
-    setCompanyName("");
-    setContactPerson("");
-    setEmail("");
-    setMobile("");
-    setGstin("");
-    setState("");
-    setEditingCustomerId(null);
-  };
+  setCompanyName("");
+  setContactPerson("");
+  setEmail("");
+  setMobile("");
+  setGstin("");
+  setAddressLine1("");
+  setAddressLine2("");
+  setCity("");
+  setState("");
+  setPincode("");
+  setCountry("India");
+  setEditingCustomerId(null);
+};
 
   const handleClose = () => {
     resetForm();
@@ -131,12 +141,17 @@ export default function Customers() {
           ? {
               ...customer,
               companyName: companyName.trim(),
-              contactPerson: contactPerson.trim(),
-              email: email.trim(),
-              mobile: mobile.trim(),
-              gstin: gstin.trim(),
-              state: state.trim(),
-              updatedAt: now,
+contactPerson: contactPerson.trim(),
+email: email.trim(),
+mobile: mobile.trim(),
+gstin: gstin.trim(),
+addressLine1: addressLine1.trim(),
+addressLine2: addressLine2.trim(),
+city: city.trim(),
+state: state.trim(),
+pincode: pincode.trim(),
+country: country.trim(),
+updatedAt: now,
             }
           : customer
       );
@@ -152,12 +167,12 @@ export default function Customers() {
         pan: "",
         email: email.trim(),
         mobile: mobile.trim(),
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: state.trim(),
-        pincode: "",
-        country: "India",
+        addressLine1: addressLine1.trim(),
+addressLine2: addressLine2.trim(),
+city: city.trim(),
+state: state.trim(),
+pincode: pincode.trim(),
+country: country.trim(),
         customerType: "Business",
         paymentTerms: 30,
         creditLimit: 0,
@@ -178,15 +193,20 @@ export default function Customers() {
   };
 
   const handleEdit = (customer: Customer) => {
-    setEditingCustomerId(customer.id);
-    setCompanyName(customer.companyName || "");
-    setContactPerson(customer.contactPerson || "");
-    setEmail(customer.email || "");
-    setMobile(customer.mobile || "");
-    setGstin(customer.gstin || "");
-    setState(customer.state || "");
-    setOpen(true);
-  };
+  setEditingCustomerId(customer.id);
+  setCompanyName(customer.companyName || "");
+  setContactPerson(customer.contactPerson || "");
+  setEmail(customer.email || "");
+  setMobile(customer.mobile || "");
+  setGstin(customer.gstin || "");
+  setAddressLine1(customer.addressLine1 || "");
+  setAddressLine2(customer.addressLine2 || "");
+  setCity(customer.city || "");
+  setState(customer.state || "");
+  setPincode(customer.pincode || "");
+  setCountry(customer.country || "India");
+  setOpen(true);
+};
 
   const handleDelete = (customer: Customer) => {
     const confirmed = window.confirm(
@@ -504,24 +524,82 @@ export default function Customers() {
                 </FormField>
 
                 <FormField label="GSTIN">
-                  <input
-                    type="text"
-                    value={gstin}
-                    onChange={(e) => setGstin(e.target.value)}
-                    placeholder="Enter GSTIN"
-                    style={styles.input}
-                  />
-                </FormField>
+  <input
+    type="text"
+    value={gstin}
+    onChange={(e) => setGstin(e.target.value)}
+    placeholder="Enter GSTIN"
+    style={styles.input}
+  />
+</FormField>
 
-                <FormField label="State">
-                  <input
-                    type="text"
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    placeholder="Enter state"
-                    style={styles.input}
-                  />
-                </FormField>
+<FormField label="Address Line 1">
+  <input
+    type="text"
+    value={addressLine1}
+    onChange={(e) =>
+      setAddressLine1(e.target.value)
+    }
+    placeholder="Enter address"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="Address Line 2">
+  <input
+    type="text"
+    value={addressLine2}
+    onChange={(e) =>
+      setAddressLine2(e.target.value)
+    }
+    placeholder="Apartment, area, landmark"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="City">
+  <input
+    type="text"
+    value={city}
+    onChange={(e) => setCity(e.target.value)}
+    placeholder="Enter city"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="State">
+  <input
+    type="text"
+    value={state}
+    onChange={(e) => setState(e.target.value)}
+    placeholder="Enter state"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="PIN Code">
+  <input
+    type="text"
+    value={pincode}
+    onChange={(e) =>
+      setPincode(e.target.value)
+    }
+    placeholder="Enter PIN code"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="Country">
+  <input
+    type="text"
+    value={country}
+    onChange={(e) =>
+      setCountry(e.target.value)
+    }
+    placeholder="Enter country"
+    style={styles.input}
+  />
+</FormField>
               </div>
             </div>
 
