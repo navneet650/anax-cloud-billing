@@ -625,7 +625,7 @@ const updateInvoiceStatus = (
   );
 
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.8);
+  pdf.setFontSize(8.3);
 
   pdf.text(
     "Original for Recipient",
@@ -676,87 +676,145 @@ const updateInvoiceStatus = (
     pdf.setFontSize(8);
 
     const sellerAddressLines =
-      pdf.splitTextToSize(
-        businessAddress,
-        112
-      );
+  businessAddress
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
 
-    pdf.text(
-      sellerAddressLines,
-      margin + 2,
-      headerY
-    );
+const sellerLine1 =
+  sellerAddressLines
+    .slice(0, 3)
+    .join(", ") + ",";
 
-    headerY +=
-      sellerAddressLines.length * 4;
+const sellerLine2 =
+  sellerAddressLines
+    .slice(3)
+    .join(", ");
+
+pdf.text(
+  sellerLine1,
+  margin + 2,
+  headerY
+);
+
+headerY += 4;
+
+if (sellerLine2) {
+  pdf.text(
+    sellerLine2,
+    margin + 2,
+    headerY
+  );
+
+  headerY += 4.5;
+}
   }
 
-  if (settings.gstin) {
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8);
+ if (settings.gstin) {
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8);
 
-    pdf.text(
-      `GSTIN    ${settings.gstin}`,
-      margin + 2,
-      headerY + 1
-    );
+  pdf.text(
+    "GSTIN",
+    margin + 2,
+    headerY
+  );
 
-    headerY += 5;
-  }
+  pdf.setFont("helvetica", "normal");
+
+  pdf.text(
+    ":",
+    margin + 19,
+    headerY
+  );
+
+  pdf.text(
+    settings.gstin,
+    margin + 22,
+    headerY
+  );
+
+  headerY += 4.5;
+}
 
   if (settings.phone) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text(
-      "Phone",
-      margin + 2,
-      headerY
-    );
+  pdf.setFont("helvetica", "bold");
 
-    pdf.setFont("helvetica", "normal");
-    pdf.text(
-      settings.phone,
-      margin + 19,
-      headerY
-    );
+  pdf.text(
+    "Phone",
+    margin + 2,
+    headerY
+  );
 
-    headerY += 4.5;
-  }
+  pdf.setFont("helvetica", "normal");
+
+  pdf.text(
+    ":",
+    margin + 19,
+    headerY
+  );
+
+  pdf.text(
+    settings.phone,
+    margin + 22,
+    headerY
+  );
+
+  headerY += 4.5;
+}
 
   if (settings.email) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text(
-      "Email",
-      margin + 2,
-      headerY
-    );
+  pdf.setFont("helvetica", "bold");
 
-    pdf.setFont("helvetica", "normal");
-    pdf.text(
-      settings.email,
-      margin + 19,
-      headerY
-    );
+  pdf.text(
+    "Email",
+    margin + 2,
+    headerY
+  );
 
-    headerY += 4.5;
-  }
+  pdf.setFont("helvetica", "normal");
 
-  if (settings.website) {
-    pdf.setFont("helvetica", "bold");
-    pdf.text(
-      "Web",
-      margin + 2,
-      headerY
-    );
+  pdf.text(
+    ":",
+    margin + 19,
+    headerY
+  );
 
-    pdf.setFont("helvetica", "normal");
-    pdf.text(
-      settings.website,
-      margin + 19,
-      headerY
-    );
+  pdf.text(
+    settings.email,
+    margin + 22,
+    headerY
+  );
 
-    headerY += 4.5;
-  }
+  headerY += 4.5;
+}
+
+if (settings.website) {
+  pdf.setFont("helvetica", "bold");
+
+  pdf.text(
+    "Web",
+    margin + 2,
+    headerY
+  );
+
+  pdf.setFont("helvetica", "normal");
+
+  pdf.text(
+    ":",
+    margin + 19,
+    headerY
+  );
+
+  pdf.text(
+    settings.website,
+    margin + 22,
+    headerY
+  );
+
+  headerY += 4.5;
+}
+
 
   /* ---------- LOGO ---------- */
 
@@ -836,6 +894,29 @@ const updateInvoiceStatus = (
     Boolean(value)
 )
 : [];
+  const detailPanelHeight = 49;
+  const customerPanelHeight = 62;
+
+  const panelHeight = Math.max(
+    detailPanelHeight,
+    customerPanelHeight
+  );
+
+  drawPanel(
+    detailsX,
+    panelTop,
+    panelWidth,
+    panelHeight,
+    "Invoice Details"
+  );
+
+  drawPanel(
+    customerX,
+    panelTop,
+    panelWidth,
+    panelHeight,
+    "Bill To"
+  );
 
   if (selectedPdfCustomer) {
     let customerY = panelTop + 15;
@@ -858,7 +939,7 @@ const updateInvoiceStatus = (
 
     customerY += 6;
 
-    pdf.setFontSize(7.5);
+    pdf.setFontSize(8);
     pdf.setTextColor(45, 45, 45);
 
     // Contact
@@ -887,51 +968,48 @@ const updateInvoiceStatus = (
     }
 
     // Address
-    if (customerAddressLines.length > 0) {
-      pdf.setFont("helvetica", "bold");
-      pdf.text(
-        "Address",
-        customerLabelX,
-        customerY
-      );
+if (customerAddressLines.length > 0) {
+  pdf.setFont("helvetica", "bold");
+  pdf.text(
+    "Address",
+    customerLabelX,
+    customerY
+  );
 
-      pdf.setFont("helvetica", "normal");
-      pdf.text(
-        ":",
-        customerColonX,
-        customerY
-      );
+  pdf.setFont("helvetica", "normal");
+  pdf.text(
+    ":",
+    customerColonX,
+    customerY
+  );
 
-      const addressText =
-        customerAddressLines.join(", ");
+  const addressLines = customerAddressLines
+    .filter(Boolean)
+    .map((line) =>
+      pdf.splitTextToSize(
+        line,
+        customerTextWidth
+      )
+    )
+    .flat();
 
-      const addressLines =
-        pdf.splitTextToSize(
-          addressText,
-          customerTextWidth
-        );
+  pdf.text(
+    addressLines[0] || "",
+    customerValueX,
+    customerY
+  );
 
-      pdf.text(
-        addressLines[0] || "",
-        customerValueX,
-        customerY
-      );
+  for (let i = 1; i < addressLines.length; i++) {
+    customerY += 4;
+    pdf.text(
+      addressLines[i],
+      customerValueX,
+      customerY
+    );
+  }
 
-      for (
-        let i = 1;
-        i < addressLines.length;
-        i++
-      ) {
-        customerY += 4;
-        pdf.text(
-          addressLines[i],
-          customerValueX,
-          customerY
-        );
-      }
-
-      customerY += 5;
-    }
+  customerY += 5;
+}
 
     // GSTIN
     if (selectedPdfCustomer.gstin) {
@@ -1007,40 +1085,6 @@ const updateInvoiceStatus = (
     }
   }
 
-  const detailPanelHeight = 49;
-
-  const customerPanelHeight =
-    Math.max(
-      49,
-      35 +
-        Math.max(
-          0,
-          customerAddressLines.length - 1
-        ) * 4
-    );
-
-  const panelHeight =
-    Math.max(
-      detailPanelHeight,
-      customerPanelHeight
-    );
-
-  drawPanel(
-    detailsX,
-    panelTop,
-    panelWidth,
-    panelHeight,
-    "Invoice Details"
-  );
-
-  drawPanel(
-    customerX,
-    panelTop,
-    panelWidth,
-    panelHeight,
-    "Bill To"
-  );
-
   /* Invoice details rows */
 
   const labelX =
@@ -1087,7 +1131,7 @@ const updateInvoiceStatus = (
         "helvetica",
         "bold"
       );
-      pdf.setFontSize(7.8);
+      pdf.setFontSize(8.3);
 
       pdf.text(
         label,
@@ -1246,7 +1290,7 @@ const updateInvoiceStatus = (
     "helvetica",
     "normal"
   );
-  pdf.setFontSize(7.8);
+  pdf.setFontSize(8.3);
   pdf.setTextColor(31, 41, 55);
 
   const invoiceItems =
@@ -1596,7 +1640,7 @@ const updateInvoiceStatus = (
       "helvetica",
       "normal"
     );
-    pdf.setFontSize(8);
+    pdf.setFontSize(8.5);
 
     pdf.text(
       descriptionLines,
@@ -1608,135 +1652,253 @@ const updateInvoiceStatus = (
       descriptionHeight + 5;
   }
 
-  /* ---------- BANK + TERMS ---------- */
+/* ---------- BANK + TERMS ---------- */
 
-  const hasBankDetails =
-    Boolean(
-      settings.bankName ||
-      settings.bankBranch ||
-      settings.accountNumber ||
-      settings.ifsc
-    );
+const hasBankDetails =
+  Boolean(
+    settings.bankName ||
+    settings.bankBranch ||
+    settings.accountNumber ||
+    settings.ifsc
+  );
 
-  const hasNotes =
+const hasNotes =
   Boolean(
     settings.termsAndConditions?.trim()
   );
-  if (
-    hasBankDetails ||
-    hasNotes
-  ) {
-    const gap = 3;
-    const halfWidth =
-      (contentWidth - gap) / 2;
 
-    const leftX = margin;
-    const rightX =
-      margin + halfWidth + gap;
-
-    const bankLines: string[] =
-      [];
-
-    if (settings.bankName) {
-      bankLines.push(
-        `Bank: ${settings.bankName}`
-      );
-    }
-
-    if (settings.bankBranch) {
-      bankLines.push(
-        `Branch: ${settings.bankBranch}`
-      );
-    }
-
-    if (settings.accountNumber) {
-      bankLines.push(
-        `Account Number: ${settings.accountNumber}`
-      );
-    }
-
-    if (settings.ifsc) {
-      bankLines.push(
-        `IFSC: ${settings.ifsc}`
-      );
-    }
-
-    const bankWrapped =
-      bankLines.flatMap(
-        (line) =>
-          pdf.splitTextToSize(
-            line,
-            halfWidth - 8
-          )
-      );
-
-    const notesWrapped =
+if (
+  hasBankDetails ||
   hasNotes
-    ? pdf.splitTextToSize(
-        settings.termsAndConditions.trim(),
-        halfWidth - 8
-      )
+) {
+  const gap = 3;
+  const halfWidth =
+    (contentWidth - gap) / 2;
+
+  const leftX = margin;
+  const rightX =
+    margin + halfWidth + gap;
+
+  const bankRows = [
+    ["Bank", settings.bankName],
+    ["Branch", settings.bankBranch],
+    ["Account Number", settings.accountNumber],
+    ["IFSC", settings.ifsc],
+  ].filter(
+    ([, value]) => Boolean(value)
+  );
+
+  const notesLines = hasNotes
+    ? settings.termsAndConditions
+        .trim()
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
     : [];
 
-    const lowerHeight =
-      Math.max(
-        35,
-        16 +
-          Math.max(
-            bankWrapped.length,
-            notesWrapped.length,
-            1
-          ) *
-            4
-      );
+  const estimatedTermsLines =
+  notesLines.reduce(
+    (total, term) =>
+      total +
+      pdf.splitTextToSize(
+        term,
+        halfWidth - 8
+      ).length,
+    0
+  );
 
-    drawPanel(
-      leftX,
-      y,
-      halfWidth,
-      lowerHeight,
-      "Bank Details"
+const bankContentHeight =
+  bankRows.length > 0
+    ? 18 +
+      (bankRows.length - 1) * 7 +
+      5
+    : 0;
+
+const termsContentHeight =
+  notesLines.length > 0
+    ? 18 +
+      (estimatedTermsLines - notesLines.length) * 4 +
+      notesLines.length * 3.5 +
+      5
+    : 0;
+
+const calculatedLowerHeight =
+  Math.max(
+    30,
+    bankContentHeight,
+    termsContentHeight
+  );
+
+const lowerHeight =
+  Math.min(
+    calculatedLowerHeight,
+    pageHeight - 23 - y
+  );
+
+  drawPanel(
+    leftX,
+    y,
+    halfWidth,
+    lowerHeight,
+    "Bank Details"
+  );
+
+  drawPanel(
+    rightX,
+    y,
+    halfWidth,
+    lowerHeight,
+    "Terms & Conditions"
+  );
+
+  pdf.setTextColor(
+    31,
+    41,
+    55
+  );
+
+  pdf.setFont(
+    "helvetica",
+    "normal"
+  );
+
+  pdf.setFontSize(8.3);
+
+  /* ---------- BANK DETAILS ---------- */
+
+  if (hasBankDetails) {
+    const bankLabelX =
+      leftX + 4;
+
+    const bankColonX =
+      leftX + 31;
+
+    const bankValueX =
+      leftX + 34;
+
+    let bankY =
+      y + 18;
+
+    bankRows.forEach(
+      ([label, value]) => {
+        pdf.setFont(
+          "helvetica",
+          "bold"
+        );
+
+        pdf.text(
+          label,
+          bankLabelX,
+          bankY
+        );
+
+        pdf.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        pdf.text(
+          ":",
+          bankColonX,
+          bankY
+        );
+
+        pdf.text(
+          String(value),
+          bankValueX,
+          bankY
+        );
+
+        bankY += 7.5;
+      }
     );
-
-    drawPanel(
-      rightX,
-      y,
-      halfWidth,
-      lowerHeight,
-      "Terms & Conditions"
-    );
-
-    pdf.setTextColor(
-      31,
-      41,
-      55
-    );
-    pdf.setFont(
-      "helvetica",
-      "normal"
-    );
-    pdf.setFontSize(7.8);
-
-    if (hasBankDetails) {
-      pdf.text(
-        bankWrapped,
-        leftX + 4,
-        y + 14
-      );
-    }
-
-    if (hasNotes) {
-      pdf.text(
-        notesWrapped,
-        rightX + 4,
-        y + 14
-      );
-    }
-
-    y += lowerHeight;
   }
 
-  /* ---------- FOOTER ---------- */
+  /* ---------- TERMS & CONDITIONS ---------- */
+
+if (hasNotes) {
+  const termsNumberX =
+    rightX + 4;
+
+  const termsTextX =
+    rightX + 11;
+
+  const termsWidth =
+    halfWidth - 15;
+
+  let termsY =
+    y + 18;
+
+  notesLines.forEach(
+    (term) => {
+      const numberMatch =
+        term.match(
+          /^\s*(\d+)\.\s*/
+        );
+
+      const number =
+        numberMatch
+          ? `${numberMatch[1]}.`
+          : "";
+
+      const text =
+        numberMatch
+          ? term
+              .replace(
+                /^\s*\d+\.\s*/,
+                ""
+              )
+              .trim()
+          : term;
+
+      const wrapped =
+        pdf.splitTextToSize(
+          text,
+          termsWidth
+        );
+
+      pdf.setFont(
+        "helvetica",
+        "normal"
+      );
+
+      if (number) {
+        pdf.text(
+          number,
+          termsNumberX,
+          termsY
+        );
+      }
+
+      pdf.text(
+        wrapped[0] || "",
+        termsTextX,
+        termsY
+      );
+
+      for (
+        let i = 1;
+        i < wrapped.length;
+        i++
+      ) {
+        termsY += 4;
+
+        pdf.text(
+          wrapped[i],
+          termsTextX,
+          termsY
+        );
+      }
+
+      termsY += 3.5;
+    }
+  );
+}
+
+  y += lowerHeight;
+}
+
+/* ---------- FOOTER ---------- */
 
   const footerY =
     pageHeight - 15;
@@ -1764,7 +1926,7 @@ const updateInvoiceStatus = (
     "helvetica",
     "normal"
   );
-  pdf.setFontSize(7.8);
+  pdf.setFontSize(8.3);
 
   pdf.text(
     "Thank you for your business.",
@@ -2535,12 +2697,14 @@ const matchesStatus =
                   <thead>
                     <tr>
                       <th style={styles.th}>
-                        Description
-                      </th>
-
-                      <th style={styles.thSmall}>
-                        Qty
-                      </th>
+  Description
+</th>
+<th style={styles.thSmall}>
+  HSN/SAC
+</th>
+<th style={styles.thSmall}>
+  Qty
+</th>
 
                       <th style={styles.thSmall}>
                         Unit Price
@@ -2568,9 +2732,10 @@ const matchesStatus =
 
                       return (
                         <tr key={item.id}>
-                          <td style={styles.td}>
-                            <select
-  value={item.productId || ""}
+
+  <td style={styles.td}>
+    <select
+      value={item.productId || ""}
   onChange={(e) => {
     if (e.target.value) {
       selectProduct(
@@ -2606,9 +2771,15 @@ const matchesStatus =
     </option>
   ))}
 </select>
+
                           </td>
 
                           <td style={styles.td}>
+                            {item.hsnSac || "—"}
+                          </td>
+
+                          <td style={styles.td}>
+
                             <input
                               type="number"
                               min="0"
