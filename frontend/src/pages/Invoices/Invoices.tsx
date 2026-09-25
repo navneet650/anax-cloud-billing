@@ -93,9 +93,24 @@ const settings = settingsService.get();
   );
   const [dueDate, setDueDate] = useState("");
   const [customer, setCustomer] = useState("");
-  const selectedCustomer = customers.find(
+const [customerSearch, setCustomerSearch] = useState("");
+
+const selectedCustomer = customers.find(
   (item) => item.id === customer
 );
+
+const filteredCustomers = customers.filter((item) => {
+  const search = customerSearch.trim().toLowerCase();
+
+  if (!search) return true;
+
+  return (
+    item.companyName.toLowerCase().includes(search) ||
+    item.contactPerson?.toLowerCase().includes(search) ||
+    item.email?.toLowerCase().includes(search) ||
+    item.gstin?.toLowerCase().includes(search)
+  );
+});
   const [currency, setCurrency] = useState(settings.defaultCurrency);
   const [paymentTerms, setPaymentTerms] = useState(
   String(settings.paymentTerms)
@@ -398,10 +413,17 @@ const outstanding = Object.entries(
   .join(" • ");
 
   const resetInvoiceForm = () => {
+  const prefix = settings.invoicePrefix || "INV-";
+
   const highestInvoiceNumber = invoices.reduce(
     (highest, invoice) => {
+      const escapedPrefix = prefix.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+
       const match = invoice.invoiceNumber.match(
-        /INV-(\d+)/
+        new RegExp(`^${escapedPrefix}(\\d+)$`, "i")
       );
 
       const number = match
@@ -414,8 +436,8 @@ const outstanding = Object.entries(
   );
 
   setInvoiceNumber(
-  `${settings.invoicePrefix}${highestInvoiceNumber + 1}`
-);
+    `${prefix}${highestInvoiceNumber + 1}`
+  );
 
     const newInvoiceDate = new Date().toISOString().split("T")[0];
 
@@ -2506,47 +2528,125 @@ const matchesStatus =
 
               <div style={styles.formGrid}>
                 <FormField label="Customer">
-                  <select
-                    value={customer}
-                    onChange={(e) => {
-  const customerId = e.target.value;
+                  <div>
+  <input
+    type="text"
+    value={
+      selectedCustomer
+        ? selectedCustomer.companyName
+        : customerSearch
+    }
+    onChange={(e) => {
+      setCustomerSearch(e.target.value);
 
-  setCustomer(customerId);
+      if (customer) {
+        setCustomer("");
+      }
+    }}
+    placeholder="Search customer by company, contact, email or GSTIN..."
+    style={styles.input}
+  />
 
-  const selected = customers.find(
-    (item) => item.id === customerId
-  );
+  {customerSearch.trim() && !selectedCustomer && (
+    <div
+      style={{
+        border: "1px solid #d1d5db",
+        borderRadius: 6,
+        marginTop: 4,
+        maxHeight: 220,
+        overflowY: "auto",
+        background: "#fff",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+      }}
+    >
+      {filteredCustomers.length > 0 ? (
+        filteredCustomers.map((item) => (
+          <div
+            key={item.id}
+            onClick={() => {
+              setCustomer(item.id);
+              setCustomerSearch("");
 
-  if (selected) {
-    const terms = String(
-      selected.paymentTerms
-    );
+              const terms = String(
+                item.paymentTerms
+              );
 
-    setPaymentTerms(terms);
+              setPaymentTerms(terms);
 
-    setDueDate(
-      calculateDueDate(
-        invoiceDate,
-        terms
-      )
-    );
-  }
-}}
-                    style={styles.input}
-                  >
-                    <option value="">
-                      Select customer
-                    </option>
+              setDueDate(
+                calculateDueDate(
+                  invoiceDate,
+                  terms
+                )
+              );
+            }}
+            style={{
+              padding: "10px 12px",
+              cursor: "pointer",
+              borderBottom: "1px solid #eef0f2",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 600,
+                color: "#123155",
+              }}
+            >
+              {item.companyName}
+            </div>
 
-                    {customers.map((customer) => (
-  <option
-    key={customer.id}
-    value={customer.id}
-  >
-    {customer.companyName}
-  </option>
-))}
-                  </select>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 3,
+              }}
+            >
+              {item.contactPerson || ""}
+              {item.email
+                ? ` • ${item.email}`
+                : ""}
+              {item.gstin
+                ? ` • ${item.gstin}`
+                : ""}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div
+          style={{
+            padding: "12px",
+            color: "#6b7280",
+            fontSize: 13,
+          }}
+        >
+          No matching customers found.
+        </div>
+      )}
+    </div>
+  )}
+
+  {selectedCustomer && (
+    <button
+      type="button"
+      onClick={() => {
+        setCustomer("");
+        setCustomerSearch("");
+      }}
+      style={{
+        marginTop: 6,
+        border: "none",
+        background: "transparent",
+        color: "#2563eb",
+        cursor: "pointer",
+        padding: 0,
+        fontSize: 12,
+      }}
+    >
+      Change customer
+    </button>
+  )}
+</div>
                 </FormField>
                 {selectedCustomer && (
   <div
