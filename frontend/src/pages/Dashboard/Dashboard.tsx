@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DollarSign,
   Users,
@@ -28,10 +29,12 @@ type DashboardInvoice = {
   grandTotal?: number | string;
   currency?: string;
   status?: string;
-dueDate?: string;
+  date?: string;
+  dueDate?: string;
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [customerCount, setCustomerCount] = useState(0);
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [productCount, setProductCount] = useState(0);
@@ -45,6 +48,7 @@ const [paidCount, setPaidCount] = useState(0);
 const [pendingCount, setPendingCount] = useState(0);
 const [overdueCount, setOverdueCount] = useState(0);
 const [draftCount, setDraftCount] = useState(0);
+const [paidInvoiceTrend, setPaidInvoiceTrend] = useState<number[]>([]);
   const [recentInvoices, setRecentInvoices] = useState<
     DashboardInvoice[]
   >([]);
@@ -137,6 +141,32 @@ const outstandingTotals = invoices
     },
     {}
   );
+const now = new Date();
+
+const monthlyPaidRevenue = Array.from({ length: 6 }, (_, index) => {
+  const targetDate = new Date(
+    now.getFullYear(),
+    now.getMonth() - (5 - index),
+    1
+  );
+
+  return paidInvoices
+  .filter((invoice) => {
+    if (!invoice.date) {
+      return false;
+    }
+
+    const invoiceDate = new Date(invoice.date);
+
+    return (
+      invoiceDate.getFullYear() === targetDate.getFullYear() &&
+      invoiceDate.getMonth() === targetDate.getMonth()
+    );
+  })
+  .reduce((total, invoice) => total + getAmount(invoice), 0);
+});
+
+setPaidInvoiceTrend(monthlyPaidRevenue);
 
 setRevenueByCurrency(paidRevenueTotals);
 setOutstandingByCurrency(outstandingTotals);
@@ -181,6 +211,15 @@ setDraftCount(draftInvoices.length);
     .join(" • ");
 };
 
+const trendMax = Math.max(...paidInvoiceTrend, 1);
+const trendLabels = Array.from({ length: 6 }, (_, index) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - (5 - index));
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+  });
+});
   const totalStatusCount = invoiceCount;
 
   const getPercentage = (count: number) => {
@@ -329,12 +368,11 @@ value={formatCurrencyTotals(outstandingByCurrency)}
 
                 <div>
                   <h2 style={styles.panelTitle}>
-                    Revenue Overview
+                    Paid Invoice Trend
                   </h2>
 
                   <p style={styles.panelSubtitle}>
-                    Billing performance based on your current
-                    invoice data.
+                    Paid invoice amounts by invoice month.
                   </p>
                 </div>
               </div>
@@ -342,7 +380,7 @@ value={formatCurrencyTotals(outstandingByCurrency)}
 
             <div style={styles.revenueBadge}>
               <ArrowUpRight size={16} />
-              Live Data
+              Last 6 Months
             </div>
           </div>
 
@@ -366,54 +404,51 @@ value={formatCurrencyTotals(outstandingByCurrency)}
                 <div
                   style={{
                     ...styles.bar,
-                    height: "36%",
+                    height: `${Math.max((paidInvoiceTrend[0] / trendMax) * 100, 4)}%`,
                   }}
                 />
 
                 <div
                   style={{
                     ...styles.bar,
-                    height: "58%",
+                    height: `${Math.max((paidInvoiceTrend[1] / trendMax) * 100, 4)}%`,
                   }}
                 />
 
                 <div
                   style={{
                     ...styles.bar,
-                    height: "46%",
+                    height: `${Math.max((paidInvoiceTrend[2] / trendMax) * 100, 4)}%`,
                   }}
                 />
 
                 <div
                   style={{
                     ...styles.bar,
-                    height: "76%",
+                    height: `${Math.max((paidInvoiceTrend[3] / trendMax) * 100, 4)}%`,
                   }}
                 />
 
                 <div
                   style={{
                     ...styles.bar,
-                    height: "63%",
+                    height: `${Math.max((paidInvoiceTrend[4] / trendMax) * 100, 4)}%`,
                   }}
                 />
 
                 <div
                   style={{
                     ...styles.bar,
-                    height: "88%",
+                    height: `${Math.max((paidInvoiceTrend[5] / trendMax) * 100, 4)}%`,
                   }}
                 />
               </div>
 
               <div style={styles.chartLabels}>
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
+  {trendLabels.map((label) => (
+    <span key={label}>{label}</span>
+  ))}
+</div>
             </div>
           </div>
         </div>
@@ -455,7 +490,7 @@ value={formatCurrencyTotals(outstandingByCurrency)}
             />
 
             <StatusRow
-              label="Pending"
+              label="Awaiting Payment"
               count={pendingCount}
               percentage={getPercentage(pendingCount)}
               color="#c2861e"
@@ -502,10 +537,13 @@ value={formatCurrencyTotals(outstandingByCurrency)}
               </p>
             </div>
 
-            <div style={styles.viewAll}>
-              View invoices
-              <ArrowUpRight size={16} />
-            </div>
+            <div
+  style={styles.viewAll}
+  onClick={() => navigate("/invoices")}
+>
+  View invoices
+  <ArrowUpRight size={16} />
+</div>
           </div>
 
           {recentInvoices.length === 0 ? (
@@ -597,22 +635,25 @@ value={formatCurrencyTotals(outstandingByCurrency)}
 
           <div style={styles.quickActions}>
             <QuickAction
-              icon={<Plus size={19} />}
-              title="Create Invoice"
-              description="Generate a new customer invoice"
-            />
+  icon={<Plus size={19} />}
+  title="Create Invoice"
+  description="Generate a new customer invoice"
+  onClick={() => navigate("/invoices")}
+/>
 
-            <QuickAction
-              icon={<UserPlus size={19} />}
-              title="Add Customer"
-              description="Create a new customer record"
-            />
+<QuickAction
+  icon={<UserPlus size={19} />}
+  title="Add Customer"
+  description="Create a new customer record"
+  onClick={() => navigate("/customers")}
+/>
 
-            <QuickAction
-              icon={<PackagePlus size={19} />}
-              title="Add Product"
-              description="Add a product or service"
-            />
+<QuickAction
+  icon={<PackagePlus size={19} />}
+  title="Add Product"
+  description="Add a product or service"
+  onClick={() => navigate("/products")}
+/>
           </div>
 
           <div style={styles.businessSnapshot}>
@@ -728,16 +769,19 @@ function QuickAction({
   icon,
   title,
   description,
+  onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  onClick: () => void;
 }) {
   return (
     <button
-      type="button"
-      style={styles.quickAction}
-    >
+  type="button"
+  style={styles.quickAction}
+  onClick={onClick}
+>
       <div style={styles.quickActionIcon}>{icon}</div>
 
       <div style={styles.quickActionText}>
