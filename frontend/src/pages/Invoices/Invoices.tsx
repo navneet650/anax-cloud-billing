@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { settingsService } from "../../services/settingsService";
 import jsPDF from "jspdf";
+import JSZip from "jszip";
 import { customerService } from "../../services/customerService";
 import { invoiceService } from "../../services/invoiceService";
 import type { Customer } from "../../types/customer";
@@ -69,10 +70,20 @@ const [editingInvoiceId, setEditingInvoiceId] =
   useState<number | null>(null);
 
 const [searchTerm, setSearchTerm] = useState("");
+const [statusFilter, setStatusFilter] =
+  useState<"All" | SmartInvoiceStatus>("All");
 
-const [statusFilter, setStatusFilter] = useState<
-  "All" | SmartInvoiceStatus
->("All");
+const [companyFilter, setCompanyFilter] = useState("All");
+const [dateFilter, setDateFilter] = useState("");
+const [monthFilter, setMonthFilter] = useState("");
+const [financialYearFilter, setFinancialYearFilter] =
+  useState("All");
+const [customStartDate, setCustomStartDate] = useState("");
+
+const [customEndDate, setCustomEndDate] = useState("");
+
+const [selectedInvoiceIds, setSelectedInvoiceIds] =
+  useState<number[]>([]);
 
 const [customers] = useState<Customer[]>(() =>
   customerService
@@ -524,7 +535,10 @@ const updateInvoiceStatus = (
   });
 };
 
-    const downloadInvoicePdf = (invoice: Invoice) => {
+   const downloadInvoicePdf = (
+  invoice: Invoice,
+  returnBlob = false
+) => {
   const pdf = new jsPDF();
 
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -1964,9 +1978,52 @@ if (hasNotes) {
     { align: "right" }
   );
 
-  pdf.save(
-    `${invoice.invoiceNumber}.pdf`
+  if (returnBlob) {
+  return pdf.output("blob");
+}
+
+pdf.save(
+  `${invoice.invoiceNumber}.pdf`
+);
+};
+const downloadSelectedInvoices = async () => {
+  const selectedInvoices = invoices.filter((invoice) =>
+    selectedInvoiceIds.includes(invoice.id)
   );
+
+  if (selectedInvoices.length === 0) {
+    window.alert("Please select at least one invoice.");
+    return;
+  }
+
+  const zip = new JSZip();
+
+  for (const invoice of selectedInvoices) {
+    const pdfBlob = downloadInvoicePdf(invoice, true);
+
+    if (pdfBlob instanceof Blob) {
+      zip.file(
+        `${invoice.invoiceNumber}.pdf`,
+        pdfBlob
+      );
+    }
+  }
+
+  const zipBlob = await zip.generateAsync({
+    type: "blob",
+  });
+
+  const url = URL.createObjectURL(zipBlob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "AnaxBill_Selected_Invoices.zip";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
 };
   const saveInvoice = () => {
     if (!customer) {
@@ -2073,13 +2130,53 @@ const filteredInvoices = invoices.filter((invoice) => {
       .includes(searchTerm.toLowerCase());
 
   const smartStatus =
-  getSmartInvoiceStatus(invoice);
+    getSmartInvoiceStatus(invoice);
 
-const matchesStatus =
-  statusFilter === "All" ||
-  smartStatus === statusFilter;
+  const matchesStatus =
+    statusFilter === "All" ||
+    smartStatus === statusFilter;
 
-  return matchesSearch && matchesStatus;
+  const matchesCompany =
+    companyFilter === "All" ||
+    invoice.customer === companyFilter;
+
+  const matchesDate =
+    !dateFilter ||
+    invoice.date === dateFilter;
+
+  const matchesMonth =
+    !monthFilter ||
+    invoice.date.startsWith(monthFilter);
+
+  let matchesFinancialYear = true;
+
+  if (financialYearFilter !== "All") {
+    const [startYear] =
+      financialYearFilter.split("-").map(Number);
+
+    const financialYearStart = `${startYear}-04-01`;
+    const financialYearEnd = `${startYear + 1}-03-31`;
+
+    matchesFinancialYear =
+      invoice.date >= financialYearStart &&
+      invoice.date <= financialYearEnd;
+  }
+
+  const matchesCustomPeriod =
+    (!customStartDate ||
+      invoice.date >= customStartDate) &&
+    (!customEndDate ||
+      invoice.date <= customEndDate);
+
+  return (
+    matchesSearch &&
+    matchesStatus &&
+    matchesCompany &&
+    matchesDate &&
+    matchesMonth &&
+    matchesFinancialYear &&
+    matchesCustomPeriod
+  );
 });
   return (
     <div style={styles.page}>
@@ -2144,91 +2241,374 @@ const matchesStatus =
 
       {/* INVOICE LIST */}
       <div style={styles.card}>
-        <div style={styles.cardHeader}>
-          <div>
-            <h2 style={styles.cardTitle}>
-              Invoice List
-            </h2>
+        <div
+  style={{
+    padding: "20px 22px",
+    borderBottom: "1px solid #e5e7eb",
+  }}
+>
+  {/* Invoice List heading + actions */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: "20px",
+      marginBottom: "18px",
+    }}
+  >
+    <div>
+      <h2 style={styles.cardTitle}>
+        Invoice List
+      </h2>
 
-            <p style={styles.cardSubtitle}>
-              Manage invoices and payment status
-            </p>
-                    </div>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-            }}
+      <p style={styles.cardSubtitle}>
+        Manage invoices and payment status
+      </p>
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        gap: "10px",
+        alignItems: "center",
+        flexShrink: 0,
+      }}
+    >
+      <button
+        type="button"
+        style={{
+          ...styles.secondaryButton,
+          opacity:
+            selectedInvoiceIds.length === 0
+              ? 0.5
+              : 1,
+          cursor:
+            selectedInvoiceIds.length === 0
+              ? "not-allowed"
+              : "pointer",
+        }}
+        disabled={selectedInvoiceIds.length === 0}
+        onClick={downloadSelectedInvoices}
+      >
+        Download Selected
+        {selectedInvoiceIds.length > 0
+          ? ` (${selectedInvoiceIds.length})`
+          : ""}
+      </button>
+
+      <button
+        type="button"
+        style={styles.secondaryButton}
+        onClick={() => {
+          resetInvoiceForm();
+          setEditingInvoiceId(null);
+          setShowCreate(true);
+        }}
+      >
+        + New Invoice
+      </button>
+    </div>
+  </div>
+
+  {/* Search + main filters */}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "minmax(240px, 1.5fr) minmax(150px, 1fr) minmax(180px, 1.2fr)",
+      gap: "12px",
+      marginBottom: "12px",
+    }}
+  >
+    <input
+      type="text"
+      placeholder="Search invoice or customer..."
+      value={searchTerm}
+      onChange={(e) =>
+        setSearchTerm(e.target.value)
+      }
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    />
+
+    <select
+      value={statusFilter}
+      onChange={(e) =>
+        setStatusFilter(
+          e.target.value as
+            | "All"
+            | SmartInvoiceStatus
+        )
+      }
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <option value="All">All Status</option>
+      <option value="Draft">Draft</option>
+      <option value="Sent">Sent</option>
+      <option value="Pending">Pending</option>
+      <option value="Due Today">
+        Due Today
+      </option>
+      <option value="Overdue">Overdue</option>
+      <option value="Paid">Paid</option>
+    </select>
+
+    <select
+      value={companyFilter}
+      onChange={(e) =>
+        setCompanyFilter(e.target.value)
+      }
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <option value="All">
+        All Companies
+      </option>
+
+      {Array.from(
+        new Set(
+          invoices.map(
+            (invoice) => invoice.customer
+          )
+        )
+      )
+        .sort()
+        .map((company) => (
+          <option
+            key={company}
+            value={company}
           >
-            <input
-              type="text"
-              placeholder="Search invoice or customer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: "10px 12px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                minWidth: "230px",
-              }}
-            />
+            {company}
+          </option>
+        ))}
+    </select>
+  </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(
-                  e.target.value as "All" | Invoice["status"]
-                )
-              }
-              style={{
-                padding: "10px 12px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-              }}
-            >
-              <option value="All">All Status</option>
-<option value="Draft">Draft</option>
-<option value="Sent">Sent</option>
-<option value="Pending">Pending</option>
-<option value="Due Today">Due Today</option>
-<option value="Overdue">Overdue</option>
-<option value="Paid">Paid</option>
-            </select>
-          </div>
+  {/* Date filters */}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat(3, minmax(150px, 1fr))",
+      gap: "12px",
+      marginBottom: "12px",
+    }}
+  >
+    <input
+      type="date"
+      value={dateFilter}
+      onChange={(e) => {
+        setDateFilter(e.target.value);
 
-          <button
-            type="button"
-            style={styles.secondaryButton}
-            onClick={() => {
-  resetInvoiceForm();
-  setEditingInvoiceId(null);
-  setShowCreate(true);
-}}
+        if (e.target.value) {
+          setMonthFilter("");
+          setFinancialYearFilter("All");
+          setCustomStartDate("");
+          setCustomEndDate("");
+        }
+      }}
+      title="Specific invoice date"
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    />
+
+    <input
+      type="month"
+      value={monthFilter}
+      onChange={(e) => {
+        setMonthFilter(e.target.value);
+
+        if (e.target.value) {
+          setDateFilter("");
+          setFinancialYearFilter("All");
+          setCustomStartDate("");
+          setCustomEndDate("");
+        }
+      }}
+      title="Invoice month"
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    />
+
+    <select
+      value={financialYearFilter}
+      onChange={(e) => {
+        setFinancialYearFilter(
+          e.target.value
+        );
+
+        if (e.target.value !== "All") {
+          setDateFilter("");
+          setMonthFilter("");
+          setCustomStartDate("");
+          setCustomEndDate("");
+        }
+      }}
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <option value="All">
+        All Financial Years
+      </option>
+
+      {Array.from(
+        new Set(
+          invoices.map((invoice) => {
+            const year = Number(
+              invoice.date.slice(0, 4)
+            );
+
+            const month = Number(
+              invoice.date.slice(5, 7)
+            );
+
+            return month >= 4
+              ? year
+              : year - 1;
+          })
+        )
+      )
+        .sort((a, b) => b - a)
+        .map((startYear) => (
+          <option
+            key={startYear}
+            value={`${startYear}-${startYear + 1}`}
           >
-            + New Invoice
-          </button>
-        </div>
+            FY {startYear}-
+            {String(startYear + 1).slice(-2)}
+          </option>
+        ))}
+    </select>
+  </div>
+
+  {/* Custom period */}
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns:
+        "repeat(2, minmax(150px, 1fr))",
+      gap: "12px",
+      maxWidth: "66.66%",
+    }}
+  >
+    <input
+      type="date"
+      value={customStartDate}
+      onChange={(e) => {
+        setCustomStartDate(e.target.value);
+
+        if (e.target.value) {
+          setDateFilter("");
+          setMonthFilter("");
+          setFinancialYearFilter("All");
+        }
+      }}
+      title="Custom period start date"
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    />
+
+    <input
+      type="date"
+      value={customEndDate}
+      onChange={(e) => {
+        setCustomEndDate(e.target.value);
+
+        if (e.target.value) {
+          setDateFilter("");
+          setMonthFilter("");
+          setFinancialYearFilter("All");
+        }
+      }}
+      title="Custom period end date"
+      style={{
+        padding: "10px 12px",
+        border: "1px solid #d1d5db",
+        borderRadius: "6px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    />
+  </div>
+</div>
 
         <div style={styles.tableContainer}>
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Invoice #</th>
-                <th style={styles.th}>Customer</th>
-                <th style={styles.th}>Invoice Date</th>
-                <th style={styles.th}>Due Date</th>
-                <th style={styles.th}>Amount</th>
-                <th style={styles.th}>Status</th>
-                <th style={styles.th}>Action</th>
-              </tr>
+  <th style={styles.th}>
+    <input
+      type="checkbox"
+      checked={
+        filteredInvoices.length > 0 &&
+        filteredInvoices.every((invoice) =>
+          selectedInvoiceIds.includes(invoice.id)
+        )
+      }
+      onChange={(e) => {
+        if (e.target.checked) {
+          setSelectedInvoiceIds(
+            filteredInvoices.map((invoice) => invoice.id)
+          );
+        } else {
+          setSelectedInvoiceIds([]);
+        }
+      }}
+    />
+  </th>
+
+  <th style={styles.th}>Invoice #</th>
+  <th style={styles.th}>Customer</th>
+  <th style={styles.th}>Invoice Date</th>
+  <th style={styles.th}>Due Date</th>
+  <th style={styles.th}>Amount</th>
+  <th style={styles.th}>Status</th>
+  <th style={styles.th}>Action</th>
+</tr>
             </thead>
 
             <tbody>
              {filteredInvoices.length === 0 ? (
   <tr>
     <td
-      colSpan={7}
+      colSpan={8}
       style={{
         ...styles.td,
         textAlign: "center",
@@ -2242,11 +2622,30 @@ const matchesStatus =
 ) : (
   filteredInvoices.map((invoice) => (
                 <tr key={invoice.id}>
-                  <td style={styles.td}>
-                    <strong>
-                      {invoice.invoiceNumber}
-                    </strong>
-                  </td>
+  <td style={styles.td}>
+    <input
+      type="checkbox"
+      checked={selectedInvoiceIds.includes(invoice.id)}
+      onChange={(e) => {
+        if (e.target.checked) {
+          setSelectedInvoiceIds((current) => [
+            ...current,
+            invoice.id,
+          ]);
+        } else {
+          setSelectedInvoiceIds((current) =>
+            current.filter((id) => id !== invoice.id)
+          );
+        }
+      }}
+    />
+  </td>
+
+  <td style={styles.td}>
+    <strong>
+      {invoice.invoiceNumber}
+    </strong>
+  </td>
 
                   <td style={styles.td}>
                     {invoice.customer}

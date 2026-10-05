@@ -9,13 +9,26 @@ import {
   Settings,
 } from "lucide-react";
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 type Props = {
   children: ReactNode;
 };
 
 export default function AppLayout({ children }: Props) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const pageTitles: Record<string, string> = {
+    "/": "Dashboard",
+    "/customers": "Customers",
+    "/products": "Products",
+    "/invoices": "Invoices",
+    "/reports": "Reports",
+    "/settings": "Settings",
+  };
+
+  const pageTitle =
+    pageTitles[location.pathname] || "Dashboard";
   return (
     <div
       style={{
@@ -161,7 +174,7 @@ export default function AppLayout({ children }: Props) {
             padding: "0 30px",
           }}
         >
-          <h3>Dashboard</h3>
+          <h3>{pageTitle}</h3>
 
           <div
   style={{

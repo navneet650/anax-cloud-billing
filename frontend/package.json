@@ -18,6 +18,7 @@
     "@mui/x-data-grid": "^9.10.1",
     "aws-amplify": "^6.19.0",
     "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
     "lucide-react": "^1.27.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
