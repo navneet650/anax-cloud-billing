@@ -1813,7 +1813,7 @@ const lowerHeight =
       leftX + 34;
 
     let bankY =
-      y + 18;
+      y + 14;
 
     bankRows.forEach(
       ([label, value]) => {
@@ -1863,7 +1863,7 @@ if (hasNotes) {
     halfWidth - 15;
 
   let termsY =
-    y + 18;
+    y + 14;
 
   notesLines.forEach(
     (term) => {
