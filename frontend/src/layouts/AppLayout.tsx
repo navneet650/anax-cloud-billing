@@ -158,6 +158,7 @@ export default function AppLayout({ children }: Props) {
       <div
         style={{
           flex: 1,
+	  minWidth: 0,
           display: "flex",
           flexDirection: "column",
         }}
@@ -205,6 +206,7 @@ export default function AppLayout({ children }: Props) {
         <div
           style={{
             flex: 1,
+	    minWidth: 0,
             overflow: "auto",
           }}
         >
