@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AnaxBill backend — Phase 2.4a (settings + customers)
+Description: AnaxBill backend — Phase 2.4b (settings + customers + products + invoices)
 
 Globals:
   Function:
@@ -54,6 +54,58 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AnaxBill_Products
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: companyId
+          AttributeType: S
+        - AttributeName: productId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: companyId
+          KeyType: HASH
+        - AttributeName: productId
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  InvoicesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AnaxBill_Invoices
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: companyId
+          AttributeType: S
+        - AttributeName: invoiceId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: companyId
+          KeyType: HASH
+        - AttributeName: invoiceId
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  CountersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AnaxBill_Counters
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: companyId
+          AttributeType: S
+        - AttributeName: counterId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: companyId
+          KeyType: HASH
+        - AttributeName: counterId
+          KeyType: RANGE
+
   ApiGateway:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -84,7 +136,8 @@ Resources:
         Variables:
           SETTINGS_TABLE: !Ref SettingsTable
       Policies:
-        - DynamoDBCrudPolicy: { TableName: !Ref SettingsTable }
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SettingsTable
       Events:
         SettingsGet:
           Type: HttpApi
@@ -92,14 +145,16 @@ Resources:
             ApiId: !Ref ApiGateway
             Path: /settings
             Method: GET
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
         SettingsPut:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
             Path: /settings
             Method: PUT
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
 
   CustomersFunction:
     Type: AWS::Serverless::Function
@@ -111,7 +166,8 @@ Resources:
         Variables:
           CUSTOMERS_TABLE: !Ref CustomersTable
       Policies:
-        - DynamoDBCrudPolicy: { TableName: !Ref CustomersTable }
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomersTable
       Events:
         List:
           Type: HttpApi
@@ -119,35 +175,163 @@ Resources:
             ApiId: !Ref ApiGateway
             Path: /customers
             Method: GET
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
         Create:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
             Path: /customers
             Method: POST
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
         GetOne:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
-            Path: /customers/{id}
+            Path: "/customers/{id}"
             Method: GET
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
         Update:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
-            Path: /customers/{id}
+            Path: "/customers/{id}"
             Method: PUT
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
         Delete:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
-            Path: /customers/{id}
+            Path: "/customers/{id}"
             Method: DELETE
-            Auth: { Authorizer: CognitoAuthorizer }
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  ProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: anaxbill-products
+      CodeUri: ./
+      Handler: products/app.handler
+      Environment:
+        Variables:
+          PRODUCTS_TABLE: !Ref ProductsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProductsTable
+      Events:
+        List:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /products
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Create:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /products
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetOne:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/products/{id}"
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Update:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/products/{id}"
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Delete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/products/{id}"
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  InvoicesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: anaxbill-invoices
+      CodeUri: ./
+      Handler: invoices/app.handler
+      Timeout: 20
+      Environment:
+        Variables:
+          INVOICES_TABLE: !Ref InvoicesTable
+          SETTINGS_TABLE: !Ref SettingsTable
+          COUNTERS_TABLE: !Ref CountersTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref InvoicesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SettingsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CountersTable
+      Events:
+        List:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /invoices
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Create:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /invoices
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetOne:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}"
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Update:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}"
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Status:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}/status"
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Delete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}"
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
   ApiUrl:
