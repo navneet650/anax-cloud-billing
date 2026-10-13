@@ -1,101 +1,104 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AnaxBill backend API
+Description: AnaxBill backend — Step 2.3 (settings Lambda only)
 
 Globals:
   Function:
-    Timeout: 10
-    LoggingConfig:
-      LogFormat: JSON
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 256
+    Architectures: [arm64]
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+  CognitoUserPoolId:
+    Type: String
+    Default: ap-south-1_EfkWMBUfv
+  CognitoClientId:
+    Type: String
+    Default: 5pdjd9qb8vk8nqnu1upt9g1vo5
 
 Resources:
-  AnaxBillApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Authorization,Content-Type'"
-        AllowOrigin: "'*'"
-      Auth:
-        DefaultAuthorizer: CognitoAuthorizer
-        AddDefaultAuthorizerToCorsPreflight: false
-        Authorizers:
-          CognitoAuthorizer:
-            UserPoolArn: arn:aws:cognito-idp:ap-south-1:990923146026:userpool/ap-south-1_EfkWMBUfv
 
-  AnaxBillCustomersTable:
+  SettingsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: AnaxBillCustomers
+      TableName: AnaxBill_Settings
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: userId
-          AttributeType: S
-        - AttributeName: customerId
+        - AttributeName: companyId
           AttributeType: S
       KeySchema:
-        - AttributeName: userId
+        - AttributeName: companyId
           KeyType: HASH
-        - AttributeName: customerId
-          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - Key: Project
+          Value: AnaxBill
 
-  AnaxBillApiFunction:
+  ApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowOrigins:
+          - "https://develop.d1jdrhajlzub2z.amplifyapp.com"
+          - "http://localhost:5173"
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPoolId}"
+              audience:
+                - !Ref CognitoClientId
+
+  SettingsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
-      Events:
-        Health:
-          Type: Api
-          Properties:
-            RestApiId: !Ref AnaxBillApi
-            Path: /health
-            Method: get
-            Auth:
-              Authorizer: NONE
-
-  AnaxBillCustomersFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: customers/
-      Handler: app.lambdaHandler
-      Runtime: nodejs22.x
-      Architectures:
-        - x86_64
+      FunctionName: anaxbill-settings
+      CodeUri: ./
+      Handler: settings/app.handler
       Environment:
         Variables:
-          CUSTOMERS_TABLE: !Ref AnaxBillCustomersTable
+          SETTINGS_TABLE: !Ref SettingsTable
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref AnaxBillCustomersTable
+            TableName: !Ref SettingsTable
       Events:
-        ListCustomers:
-          Type: Api
+        SettingsGet:
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref AnaxBillApi
-            Path: /customers
-            Method: get
-        CreateCustomer:
-          Type: Api
+            ApiId: !Ref ApiGateway
+            Path: /settings
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SettingsPut:
+          Type: HttpApi
           Properties:
-            RestApiId: !Ref AnaxBillApi
-            Path: /customers
-            Method: post
+            ApiId: !Ref ApiGateway
+            Path: /settings
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
 
 Outputs:
-  AnaxBillApi:
-    Description: API Gateway endpoint URL for AnaxBill API
-    Value: !Sub "https://${AnaxBillApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/health/"
-  AnaxBillApiFunction:
-    Description: AnaxBill API Lambda Function ARN
-    Value: !GetAtt AnaxBillApiFunction.Arn
-  AnaxBillCustomersFunction:
-    Description: AnaxBill Customers Lambda Function ARN
-    Value: !GetAtt AnaxBillCustomersFunction.Arn
-  AnaxBillCustomersTable:
-    Description: DynamoDB table for AnaxBill customers
-    Value: !Ref AnaxBillCustomersTable
+  ApiUrl:
+    Description: "API Gateway URL"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  SettingsTableName:
+    Value: !Ref SettingsTable

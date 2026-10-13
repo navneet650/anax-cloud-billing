@@ -1,0 +1,14 @@
+{
+  "name": "anaxbill-backend",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AnaxBill multi-tenant SaaS billing backend",
+  "scripts": {
+    "deploy": "sam build && sam deploy",
+    "local:test": "node --test common/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
