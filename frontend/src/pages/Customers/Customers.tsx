@@ -27,6 +27,7 @@ export default function Customers() {
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [gstin, setGstin] = useState("");
+  const [pan, setPan] = useState("");
   const [state, setState] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
 const [addressLine2, setAddressLine2] = useState("");
@@ -103,6 +104,7 @@ const [country, setCountry] = useState("India");
   setEmail("");
   setMobile("");
   setGstin("");
+  setPan("");
   setAddressLine1("");
   setAddressLine2("");
   setCity("");
@@ -145,6 +147,7 @@ contactPerson: contactPerson.trim(),
 email: email.trim(),
 mobile: mobile.trim(),
 gstin: gstin.trim(),
+pan: pan.trim().toUpperCase(),
 addressLine1: addressLine1.trim(),
 addressLine2: addressLine2.trim(),
 city: city.trim(),
@@ -164,7 +167,7 @@ updatedAt: now,
         companyName: companyName.trim(),
         contactPerson: contactPerson.trim(),
         gstin: gstin.trim(),
-        pan: "",
+        pan: pan.trim().toUpperCase(),
         email: email.trim(),
         mobile: mobile.trim(),
         addressLine1: addressLine1.trim(),
@@ -199,6 +202,7 @@ country: country.trim(),
   setEmail(customer.email || "");
   setMobile(customer.mobile || "");
   setGstin(customer.gstin || "");
+  setPan(customer.pan || "");
   setAddressLine1(customer.addressLine1 || "");
   setAddressLine2(customer.addressLine2 || "");
   setCity(customer.city || "");
@@ -529,6 +533,16 @@ country: country.trim(),
     value={gstin}
     onChange={(e) => setGstin(e.target.value)}
     placeholder="Enter GSTIN"
+    style={styles.input}
+  />
+</FormField>
+
+<FormField label="PAN">
+  <input
+    type="text"
+    value={pan}
+    onChange={(e) => setPan(e.target.value.toUpperCase())}
+    placeholder="Enter PAN"
     style={styles.input}
   />
 </FormField>

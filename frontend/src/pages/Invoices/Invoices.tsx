@@ -544,7 +544,7 @@ const updateInvoiceStatus = (
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  const margin = 18;
+  const margin = 10;
   const rightMargin = pageWidth - margin;
   const contentWidth = rightMargin - margin;
 
@@ -902,7 +902,7 @@ if (settings.website) {
     );
 
   const panelTop =
-    Math.max(headerY + 5, 68);
+  Math.max(headerY + 4, 62);
 
   const panelGap = 3;
 
@@ -930,8 +930,25 @@ if (settings.website) {
     Boolean(value)
 )
 : [];
-  const detailPanelHeight = 49;
-  const customerPanelHeight = 62;
+  const detailPanelHeight = 8 + 6 * 6 + 7;
+
+const customerTextWidth = panelWidth - 34;
+
+const customerAddressWrappedLines = customerAddressLines
+  .map((line) => pdf.splitTextToSize(line, customerTextWidth))
+  .flat();
+
+const customerContentHeight =
+  6 +
+  (selectedPdfCustomer?.contactPerson ? 5 : 0) +
+  (customerAddressLines.length > 0
+    ? Math.max(5, customerAddressWrappedLines.length * 4) + 5
+    : 0) +
+  (selectedPdfCustomer?.gstin ? 5 : 0) +
+  (selectedPdfCustomer?.email ? 5 : 0) +
+  (selectedPdfCustomer?.mobile ? 5 : 0);
+
+const customerPanelHeight = 8 + customerContentHeight + 7;
 
   const panelHeight = Math.max(
     detailPanelHeight,
@@ -955,7 +972,12 @@ if (settings.website) {
   );
 
   if (selectedPdfCustomer) {
-    let customerY = panelTop + 15;
+    let customerY =
+  panelTop + 8 +
+  Math.max(
+    0,
+    (panelHeight - 8 - 7 - customerContentHeight) / 2
+  );
 
     const customerLabelX = customerX + 4;
     const customerColonX = customerX + 27;
@@ -1507,7 +1529,7 @@ if (customerAddressLines.length > 0) {
 
   /* ---------- TOTALS ---------- */
 
-  y += 3;
+  y += 2;
 
   const totalsWidth = 82;
   const totalsX =
@@ -1641,7 +1663,7 @@ if (customerAddressLines.length > 0) {
     { align: "right" }
   );
 
-  y += 18;
+  y += 8;
 
   /* ---------- INVOICE DESCRIPTION ---------- */
 
@@ -1732,44 +1754,49 @@ if (
         .filter(Boolean)
     : [];
 
-  const estimatedTermsLines =
-  notesLines.reduce(
-    (total, term) =>
-      total +
-      pdf.splitTextToSize(
-        term,
-        halfWidth - 8
-      ).length,
-    0
-  );
-
-const bankContentHeight =
+  const bankContentHeight =
   bankRows.length > 0
-    ? 18 +
-      (bankRows.length - 1) * 7 +
-      5
+    ? 11 + bankRows.length * 7.5
     : 0;
 
-const termsContentHeight =
-  notesLines.length > 0
-    ? 18 +
-      (estimatedTermsLines - notesLines.length) * 4 +
-      notesLines.length * 3.5 +
-      5
-    : 0;
+const termsContentHeightActual = notesLines.reduce(
+  (total, term) => {
+    const numberMatch = term.match(/^\s*(\d+)\.\s*/);
+    const content = numberMatch
+      ? term.replace(/^\s*\d+\.\s*/, "").trim()
+      : term;
+
+    const wrapped = pdf.splitTextToSize(
+      content,
+      halfWidth - 15
+    );
+
+    return total + wrapped.length * 4 + 3.5;
+  },
+  0
+);
 
 const calculatedLowerHeight =
+  8 +
   Math.max(
-    30,
     bankContentHeight,
-    termsContentHeight
-  );
+    termsContentHeightActual,
+    10
+  ) +
+  7;
 
-const lowerHeight =
-  Math.min(
-    calculatedLowerHeight,
-    pageHeight - 23 - y
-  );
+
+const footerClearance = 26;
+
+if (
+  y + calculatedLowerHeight >
+  pageHeight - footerClearance
+) {
+  pdf.addPage();
+  y = 22;
+}
+
+const lowerHeight = calculatedLowerHeight;
 
   drawPanel(
     leftX,
@@ -1812,8 +1839,14 @@ const lowerHeight =
     const bankValueX =
       leftX + 34;
 
-    let bankY =
-      y + 14;
+    
+let bankY =
+  y + 8 +
+  Math.max(
+    0,
+    (lowerHeight - 8 - 7 - bankRows.length * 7.5) / 2
+  );
+
 
     bankRows.forEach(
       ([label, value]) => {
@@ -1862,8 +1895,14 @@ if (hasNotes) {
   const termsWidth =
     halfWidth - 15;
 
-  let termsY =
-    y + 14;
+  
+let termsY =
+  y + 8 +
+  Math.max(
+    0,
+    (lowerHeight - 8 - 7 - termsContentHeightActual) / 2
+  );
+
 
   notesLines.forEach(
     (term) => {
@@ -3232,46 +3271,45 @@ const filteredInvoices = invoices.filter((invoice) => {
                       return (
                         <tr key={item.id}>
 
-  <td style={styles.td}>
-    <select
-      value={item.productId || ""}
-  onChange={(e) => {
-    if (e.target.value) {
-      selectProduct(
-        item.id,
-        e.target.value
-      );
-    } else {
-      updateItem(
-        item.id,
-        "productId",
-        ""
-      );
+  
+<td style={styles.td}>
+  <select
+    value={item.productId || ""}
+    onChange={(e) => {
+      if (e.target.value) {
+        selectProduct(item.id, e.target.value);
+      } else {
+        updateItem(item.id, "productId", "");
+      }
+    }}
+    style={styles.tableInput}
+  >
+    <option value="">Custom description / Select product</option>
+    {products
+      .filter((product) => product.currency === currency)
+      .map((product) => (
+        <option key={product.id} value={product.id}>
+          {product.name} — {product.currency}{" "}
+          {product.unitPrice.toLocaleString()} / {product.unit}
+        </option>
+      ))}
+  </select>
+
+  <input
+    type="text"
+    value={item.description}
+    onChange={(e) =>
+      updateItem(item.id, "description", e.target.value)
     }
-  }}
-  style={styles.tableInput}
->
-  <option value="">
-    Select product/service
-  </option>
+    placeholder="Enter invoice line description"
+    style={{
+      ...styles.tableInput,
+      marginTop: 6,
+      minWidth: 180,
+    }}
+  />
+</td>
 
-  {products
-  .filter(
-    (product) => product.currency === currency
-  )
-  .map((product) => (
-    <option
-      key={product.id}
-      value={product.id}
-    >
-      {product.name} — {product.currency}{" "}
-      {product.unitPrice.toLocaleString()} /{" "}
-      {product.unit}
-    </option>
-  ))}
-</select>
-
-                          </td>
 
                           <td style={styles.td}>
                             {item.hsnSac || "—"}

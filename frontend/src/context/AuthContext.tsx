@@ -41,8 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const email = session.tokens?.idToken?.payload.email as string | undefined;
 
     setUser(email ?? currentUser.username);
-  } catch (err) {
-    console.error("Authentication check failed:", err);
+  } catch {
     setUser(null);
   } finally {
     setLoading(false);

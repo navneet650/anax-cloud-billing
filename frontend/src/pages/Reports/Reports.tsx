@@ -51,6 +51,7 @@ export default function Reports() {
     let overdueCount = 0;
     let sentCount = 0;
     let draftCount = 0;
+    const gstByCurrency: Record<string, number> = {};
 
     invoices.forEach((invoice) => {
       const currency = invoice.currency;
@@ -59,6 +60,18 @@ export default function Reports() {
       totalsByCurrency[currency] =
         (totalsByCurrency[currency] || 0) +
         invoice.amount;
+
+      const gstAmount = (invoice.items ?? []).reduce(
+        (sum, item) =>
+          sum +
+          (item.quantity * item.unitPrice * item.taxRate) / 100,
+        0
+      );
+
+      if (gstAmount > 0 && status !== "Draft") {
+        gstByCurrency[currency] =
+          (gstByCurrency[currency] || 0) + gstAmount;
+      }
 
       if (status === "Paid") {
         paidCount++;
@@ -90,6 +103,7 @@ export default function Reports() {
       overdueCount,
       sentCount,
       draftCount,
+      gstByCurrency,
     };
   }, [invoices]);
 
@@ -103,6 +117,10 @@ export default function Reports() {
 
   const totalOutstanding = Object.entries(
     reportData.outstandingByCurrency
+  );
+
+  const totalGst = Object.entries(
+    reportData.gstByCurrency
   );
 
   const statusCards = [
@@ -391,6 +409,67 @@ export default function Reports() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* GST COLLECTED */}
+
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow:
+            "0 2px 10px rgba(0,0,0,0.06)",
+          marginBottom: "30px",
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: "12px",
+            fontSize: "20px",
+          }}
+        >
+          GST Collected
+        </h2>
+
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: "20px",
+            color: "#6b7280",
+            fontSize: "14px",
+          }}
+        >
+          Tax collected on issued invoices, based on line-item tax rates.
+        </p>
+
+        {totalGst.length === 0 ? (
+          <p style={{ color: "#6b7280" }}>
+            No GST data yet. Create invoices with taxable line items to see totals here.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {totalGst.map(([currency, amount]) => (
+              <div
+                key={currency}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px",
+                  borderRadius: "8px",
+                  background: "#f8fafc",
+                }}
+              >
+                <strong>{currency}</strong>
+                <strong>
+                  {formatCurrency(amount, currency)}
+                </strong>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* CURRENCY BREAKDOWN */}
