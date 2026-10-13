@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AnaxBill backend — Step 2.3 (settings Lambda only)
+Description: AnaxBill backend — Phase 2.4a (settings + customers)
 
 Globals:
   Function:
@@ -35,9 +35,24 @@ Resources:
           KeyType: HASH
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
-      Tags:
-        - Key: Project
-          Value: AnaxBill
+
+  CustomersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AnaxBill_Customers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: companyId
+          AttributeType: S
+        - AttributeName: customerId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: companyId
+          KeyType: HASH
+        - AttributeName: customerId
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   ApiGateway:
     Type: AWS::Serverless::HttpApi
@@ -47,15 +62,8 @@ Resources:
         AllowOrigins:
           - "https://develop.d1jdrhajlzub2z.amplifyapp.com"
           - "http://localhost:5173"
-        AllowHeaders:
-          - Content-Type
-          - Authorization
-        AllowMethods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-          - OPTIONS
+        AllowHeaders: [Content-Type, Authorization]
+        AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
         MaxAge: 600
       Auth:
         Authorizers:
@@ -76,8 +84,7 @@ Resources:
         Variables:
           SETTINGS_TABLE: !Ref SettingsTable
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref SettingsTable
+        - DynamoDBCrudPolicy: { TableName: !Ref SettingsTable }
       Events:
         SettingsGet:
           Type: HttpApi
@@ -85,20 +92,63 @@ Resources:
             ApiId: !Ref ApiGateway
             Path: /settings
             Method: GET
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Auth: { Authorizer: CognitoAuthorizer }
         SettingsPut:
           Type: HttpApi
           Properties:
             ApiId: !Ref ApiGateway
             Path: /settings
             Method: PUT
-            Auth:
-              Authorizer: CognitoAuthorizer
+            Auth: { Authorizer: CognitoAuthorizer }
+
+  CustomersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: anaxbill-customers
+      CodeUri: ./
+      Handler: customers/app.handler
+      Environment:
+        Variables:
+          CUSTOMERS_TABLE: !Ref CustomersTable
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref CustomersTable }
+      Events:
+        List:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /customers
+            Method: GET
+            Auth: { Authorizer: CognitoAuthorizer }
+        Create:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /customers
+            Method: POST
+            Auth: { Authorizer: CognitoAuthorizer }
+        GetOne:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /customers/{id}
+            Method: GET
+            Auth: { Authorizer: CognitoAuthorizer }
+        Update:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /customers/{id}
+            Method: PUT
+            Auth: { Authorizer: CognitoAuthorizer }
+        Delete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /customers/{id}
+            Method: DELETE
+            Auth: { Authorizer: CognitoAuthorizer }
 
 Outputs:
   ApiUrl:
-    Description: "API Gateway URL"
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
-  SettingsTableName:
-    Value: !Ref SettingsTable
