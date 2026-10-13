@@ -63,3 +63,11 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1f29
 body.intra .igst-row { display: none; }
 body.inter .cgst-row,
 body.inter .sgst-row { display: none; }
+
+/* Vertically center content within stretched panels */
+.panel-body.rows { justify-content: center; }
+
+/* ---------- Panels: fill height + center content vertically ---------- */
+.panel { display: flex; flex-direction: column; }
+.panel-body { flex: 1; }
+.panel-body.rows { justify-content: center; }
