@@ -1,0 +1,46 @@
+{
+  "businessName": "Anax Enterprise",
+  "businessAddress": "Flat No: B2-502, Ashadeep Rainbow, Jeerota, Jagatpura, JAIPUR, Rajasthan - 303905",
+  "gstin": "08AMBPB5626L1Z3",
+  "phone": "09811919891",
+  "email": "navneet@anaxenterprise.com",
+  "website": "https://anaxenterprise.com",
+  "logo": "",
+
+  "invoiceNumber": "INV-1018",
+  "invoiceDate": "13-Oct-2026",
+  "dueDate": "12-Nov-2026",
+  "currency": "INR",
+  "poNumber": "PO-MULTI-01",
+  "placeOfSupply": "07 - Delhi",
+
+  "customerName": "Shanav Technologies",
+  "customerContact": "Navneet Bishnoi",
+  "customerAddressLine1": "Flat No: B2-502, Ashadeep Rainbow, Jagatpura",
+  "customerAddressLine2": "",
+  "customerCity": "Jaipur",
+  "customerState": "Rajasthan",
+  "customerPincode": "302022",
+  "customerCountry": "India",
+  "customerGstin": "08AIGPR8890P1Z3",
+  "customerEmail": "navneet@shanav.com",
+  "customerMobile": "09811919891",
+
+  "items": [
+    { "description": "AWS Cloud Consulting - Architecture Review", "hsnSac": "998314", "quantity": 4, "unitPrice": 3000, "taxRate": 18 },
+    { "description": "Cloud Infrastructure Management - October 2026", "hsnSac": "998315", "quantity": 1, "unitPrice": 15000, "taxRate": 18 },
+    { "description": "DevOps Automation Setup and Pipeline Configuration", "hsnSac": "998313", "quantity": 2, "unitPrice": 8500, "taxRate": 18 },
+    { "description": "Security Audit and Penetration Testing", "hsnSac": "998319", "quantity": 1, "unitPrice": 22000, "taxRate": 18 },
+    { "description": "Database Migration Support (RDS to Aurora)", "hsnSac": "998314", "quantity": 3, "unitPrice": 6000, "taxRate": 18 },
+    { "description": "Monthly Backup and Disaster Recovery Configuration", "hsnSac": "998315", "quantity": 1, "unitPrice": 4500, "taxRate": 18 }
+  ],
+
+  "invoiceDescription": "AWS consulting and infrastructure management services for October 2026, including architecture review, DevOps automation, security audit, and database migration support.",
+
+  "bankName": "IDFC First Bank",
+  "bankBranch": "Vaishali Nagar, Jaipur",
+  "accountNumber": "59811919899",
+  "ifsc": "IDFB0042128",
+
+  "termsAndConditions": "1. Payment is due within the agreed credit period.\n2. Please make the payment to the above bank account.\n3. Any disputes are subject to Jaipur, Rajasthan jurisdiction only.\n4. This is a computer generated invoice and does not require a signature.\n5. For any queries, please contact us at navneet.bishnoi@gmail.com."
+}
