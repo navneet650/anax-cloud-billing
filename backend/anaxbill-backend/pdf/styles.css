@@ -1,0 +1,73 @@
+@page { size: A4; margin: 10mm; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1f2937; font-size: 9.5pt; }
+
+.page { width: 190mm; margin: 0 auto; padding: 0; }
+
+.inv-header { position: relative; text-align: center; padding: 2mm 0 1mm; }
+.inv-title { color: #123155; font-weight: 700; font-size: 20pt; letter-spacing: 0.5px; }
+.inv-copy { position: absolute; right: 0; top: 4mm; font-weight: 700; font-size: 9pt; color: #123155; }
+.rule-thick { border: none; border-top: 1.5px solid #123155; margin: 1mm 0 0.6mm; }
+.rule-thin { border: none; border-top: 0.5px solid #123155; margin: 0 0 4mm; }
+
+.seller { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm; margin-bottom: 5mm; }
+.seller-name { color: #123155; font-weight: 700; font-size: 15pt; margin-bottom: 2mm; }
+.seller-line { font-size: 9pt; line-height: 1.5; }
+.seller-line b { display: inline-block; min-width: 12mm; color: #1f2937; font-weight: 700; }
+.colon { display: inline-block; width: 3mm; }
+.seller-logo img { max-height: 22mm; max-width: 40mm; }
+
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin-bottom: 4mm; }
+.bottom-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin-top: 4mm; }
+.panel { border: 0.5px solid #cddae6; border-radius: 1.2mm; overflow: hidden; background: #fff; }
+.panel-head { background: #e0ebf5; color: #123155; font-weight: 700; font-size: 9.5pt; padding: 1.6mm 3mm; border-bottom: 0.5px solid #cddae6; }
+.panel-body { padding: 2.4mm 3mm; }
+.panel-body.rows { display: flex; flex-direction: column; gap: 1mm; }
+.bill-name { color: #123155; font-weight: 700; font-size: 10.5pt; margin-bottom: 1.5mm; }
+.row { display: grid; grid-template-columns: 34mm 3mm 1fr; font-size: 9pt; line-height: 1.4; }
+.row .lbl { font-weight: 700; white-space: nowrap; }
+.row .val { word-break: break-word; }
+
+.items table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.items thead { display: table-header-group; }
+.items thead th { background: #d5e2ef; color: #123155; font-weight: 700; font-size: 9pt; text-align: left; padding: 1.8mm 2mm; border-bottom: 0.5px solid #b8cde0; white-space: nowrap; }
+.items tbody td { font-size: 9pt; padding: 2.2mm 2mm; border-bottom: 0.4px solid #e2e8ef; vertical-align: top; }
+.col-no    { width: 8mm;  text-align: center; }
+.col-desc  { width: auto; }
+.col-hsn   { width: 20mm; text-align: center; }
+.col-qty   { width: 12mm; text-align: center; }
+.col-price { width: 34mm; text-align: right; }
+.col-tax   { width: 18mm; text-align: center; }
+.col-amt   { width: 28mm; text-align: right; }
+
+.totals { display: flex; justify-content: flex-end; margin-top: 2mm; page-break-inside: avoid; break-inside: avoid; }
+.totals-box { width: 80mm; border: 0.5px solid #cddae6; border-radius: 1.2mm; overflow: hidden; }
+.trow { display: flex; justify-content: space-between; padding: 2mm 3mm; font-size: 9pt; border-bottom: 0.4px solid #e2e8ef; }
+.trow:last-child { border-bottom: none; }
+.trow.grand { background: #d5e2ef; color: #123155; font-weight: 700; font-size: 10pt; }
+
+.desc-panel { margin-top: 4mm; page-break-inside: avoid; break-inside: avoid; }
+.desc-panel .panel-body { font-size: 9pt; line-height: 1.5; }
+
+.terms ol { margin: 0; padding-left: 4mm; }
+.terms li { font-size: 9pt; line-height: 1.5; margin-bottom: 0.6mm; }
+
+.footer-rule { margin-top: 5mm; }
+.inv-footer { display: flex; justify-content: space-between; font-size: 9pt; padding-top: 2mm; color: #374151; }
+
+.panel { page-break-inside: avoid; break-inside: avoid; }
+.bottom-panels { page-break-inside: avoid; break-inside: avoid; }
+.items tr { page-break-inside: avoid; break-inside: avoid; }
+
+body.intra .igst-row { display: none; }
+body.inter .cgst-row,
+body.inter .sgst-row { display: none; }
+
+/* Vertically center content within stretched panels */
+.panel-body.rows { justify-content: center; }
+
+/* ---------- Panels: fill height + center content vertically ---------- */
+.panel { display: flex; flex-direction: column; }
+.panel-body { flex: 1; }
+.panel-body.rows { justify-content: center; }

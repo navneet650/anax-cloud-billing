@@ -333,6 +333,57 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  PdfsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "anaxbill-pdfs-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldPdfs
+            Status: Enabled
+            ExpirationInDays: 90
+            Prefix: pdfs/
+
+  InvoicesPdfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: anaxbill-invoices-pdf
+      CodeUri: ./
+      Handler: invoices-pdf/app.handler
+      Timeout: 60
+      MemorySize: 1024
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          INVOICES_TABLE: !Ref InvoicesTable
+          SETTINGS_TABLE: !Ref SettingsTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          PDF_BUCKET: !Ref PdfsBucket
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref InvoicesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SettingsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CustomersTable
+        - S3CrudPolicy:
+            BucketName: !Ref PdfsBucket
+      Events:
+        Generate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}/pdf"
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+
 Outputs:
   ApiUrl:
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
