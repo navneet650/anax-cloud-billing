@@ -384,6 +384,47 @@ Resources:
               Authorizer: CognitoAuthorizer
 
 
+  InvoicesSendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: anaxbill-invoices-send
+      CodeUri: ./
+      Handler: invoices-send/app.handler
+      Timeout: 60
+      MemorySize: 1024
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          INVOICES_TABLE: !Ref InvoicesTable
+          SETTINGS_TABLE: !Ref SettingsTable
+          CUSTOMERS_TABLE: !Ref CustomersTable
+          SES_FROM_EMAIL: "navneet@anaxenterprise.com"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref InvoicesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SettingsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CustomersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref InvoicesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendRawEmail
+                - ses:SendEmail
+              Resource: "*"
+      Events:
+        Send:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: "/invoices/{id}/send"
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+
 Outputs:
   ApiUrl:
     Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
