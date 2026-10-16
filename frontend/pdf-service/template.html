@@ -8,64 +8,52 @@
 <body class="{{#if isIntraState}}intra{{else}}inter{{/if}}">
   <div class="page">
 
-    <header class="inv-header">
-      <div class="inv-title">TAX INVOICE</div>
-      <div class="inv-copy">Original for Recipient</div>
-    </header>
-    <hr class="rule-thick">
-    <hr class="rule-thin">
-
-    <section class="seller">
+    <!-- SELLER BLOCK -->
+    <section class="seller-block">
       <div class="seller-text">
-        <div class="seller-name">{{businessName}}</div>
+        <div class="seller-line">{{businessName}}</div>
         <div class="seller-line">{{businessAddress}}</div>
-        <div class="seller-line"><b>GSTIN</b> <span class="colon">:</span> {{gstin}}</div>
-        <div class="seller-line"><b>Phone</b> <span class="colon">:</span> {{phone}}</div>
-        <div class="seller-line"><b>Email</b> <span class="colon">:</span> {{email}}</div>
-        <div class="seller-line"><b>Web</b> <span class="colon">:</span> {{website}}</div>
+        <div class="seller-line"><b>GSTIN:</b> {{gstin}}</div>
       </div>
       <div class="seller-logo">
         {{#if logo}}<img src="{{logo}}" alt="">{{/if}}
       </div>
     </section>
 
-    <section class="panels">
-      <div class="panel">
-        <div class="panel-head">Invoice Details</div>
-        <div class="panel-body rows">
-          <div class="row"><span class="lbl">Invoice Number</span><span class="colon">:</span><span class="val">{{invoiceNumber}}</span></div>
-          <div class="row"><span class="lbl">Invoice Date</span><span class="colon">:</span><span class="val">{{invoiceDate}}</span></div>
-          <div class="row"><span class="lbl">Due Date</span><span class="colon">:</span><span class="val">{{dueDate}}</span></div>
-          <div class="row"><span class="lbl">Currency</span><span class="colon">:</span><span class="val">{{currency}}</span></div>
-          <div class="row"><span class="lbl">PO Number</span><span class="colon">:</span><span class="val">{{poNumber}}</span></div>
-          <div class="row"><span class="lbl">Place of Supply</span><span class="colon">:</span><span class="val">{{placeOfSupply}}</span></div>
-        </div>
-      </div>
+    <!-- TAX INVOICE HEADER -->
+    <header class="tax-invoice-header">
+      <div class="inv-title">TAX INVOICE</div>
+      <div class="inv-copy">Original for Recipient</div>
+    </header>
 
-      <div class="panel">
-        <div class="panel-head">Bill To</div>
-        <div class="panel-body rows">
-          <div class="bill-name">{{customerName}}</div>
-          <div class="row"><span class="lbl">Contact</span><span class="colon">:</span><span class="val">{{customerContact}}</span></div>
-          <div class="row"><span class="lbl">Address</span><span class="colon">:</span><span class="val">{{customerAddress}}</span></div>
-          <div class="row"><span class="lbl">GSTIN</span><span class="colon">:</span><span class="val">{{customerGstin}}</span></div>
-          <div class="row"><span class="lbl">Email</span><span class="colon">:</span><span class="val">{{customerEmail}}</span></div>
-          <div class="row"><span class="lbl">Mobile</span><span class="colon">:</span><span class="val">{{customerMobile}}</span></div>
-        </div>
+    <!-- INVOICE META + CUSTOMER -->
+    <section class="meta-section">
+      <div class="meta-left">
+        <div class="meta-line"><b>Invoice No:</b> {{invoiceNumber}}</div>
+        <div class="meta-line"><b>Invoice Date:</b> {{invoiceDate}}</div>
+        <div class="meta-line"><b>PO No:</b> {{poNumber}}</div>
+        <div class="meta-line"><b>Place of Supply:</b> {{placeOfSupply}}</div>
+      </div>
+      <div class="meta-right">
+        <div class="customer-heading">Customer Details</div>
+        <div class="customer-name">{{customerName}}</div>
+        <div class="customer-line">{{customerAddress}}</div>
+        <div class="customer-line"><b>GSTIN:</b> {{customerGstin}}</div>
       </div>
     </section>
 
+    <!-- ITEMS TABLE -->
     <section class="items">
       <table>
         <thead>
           <tr>
-            <th class="col-no">#</th>
-            <th class="col-desc">Description</th>
+            <th class="col-no">S.No.</th>
+            <th class="col-desc">Product/Service</th>
             <th class="col-hsn">HSN/SAC</th>
             <th class="col-qty">Qty</th>
-            <th class="col-price">Unit Price ({{currency}})</th>
-            <th class="col-tax">Tax Rate</th>
-            <th class="col-amt">Amount ({{currency}})</th>
+            <th class="col-price">Unit Price</th>
+            <th class="col-taxable">Taxable Value</th>
+            <th class="col-total">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -76,56 +64,84 @@
             <td class="col-hsn">{{this.hsnSac}}</td>
             <td class="col-qty">{{this.quantity}}</td>
             <td class="col-price">{{this.unitPrice}}</td>
-            <td class="col-tax">{{this.taxRate}}%</td>
-            <td class="col-amt">{{this.amount}}</td>
+            <td class="col-taxable">{{this.taxableValue}}</td>
+            <td class="col-total">{{this.taxableValue}}</td>
+          </tr>
+          {{/each}}
+          {{#each taxRows}}
+          <tr class="tax-row">
+            <td class="col-no"></td>
+            <td class="col-desc">{{this.label}}</td>
+            <td class="col-hsn">-</td>
+            <td class="col-qty">-</td>
+            <td class="col-price">-</td>
+            <td class="col-taxable">{{this.amount}}</td>
+            <td class="col-total">{{this.amount}}</td>
           </tr>
           {{/each}}
         </tbody>
       </table>
     </section>
 
-    <section class="totals">
+    <!-- TOTALS SUMMARY -->
+    <section class="totals-section">
       <div class="totals-box">
-        <div class="trow"><span>Subtotal</span><span>{{subtotal}}</span></div>
-        <div class="trow cgst-row"><span>CGST (9%)</span><span>{{cgst}}</span></div>
-        <div class="trow sgst-row"><span>SGST (9%)</span><span>{{sgst}}</span></div>
-        <div class="trow igst-row"><span>IGST</span><span>{{igst}}</span></div>
-        <div class="trow grand"><span>Grand Total ({{currency}})</span><span>{{grandTotal}}</span></div>
+        <div class="trow"><span>Taxable Amount:</span><span>{{subtotal}}</span></div>
+        {{#if isIntraState}}
+        <div class="trow"><span>Add: CGST ({{cgstRate}}%):</span><span>{{cgst}}</span></div>
+        <div class="trow"><span>Add: SGST ({{sgstRate}}%):</span><span>{{sgst}}</span></div>
+        {{else}}
+        <div class="trow"><span>Add: IGST ({{igstRate}}%):</span><span>{{igst}}</span></div>
+        {{/if}}
+        <div class="trow grand"><span>Total Amount After Tax:</span><span>{{grandTotal}}</span></div>
       </div>
     </section>
 
-    {{#if invoiceDescription}}
-    <section class="panel desc-panel">
-      <div class="panel-head">Invoice Description</div>
-      <div class="panel-body">{{invoiceDescription}}</div>
+    <!-- AMOUNT IN WORDS -->
+    <section class="amount-in-words">
+      <b>Amount in words:</b> <i>{{amountInWords}}</i>
     </section>
-    {{/if}}
 
-    <section class="bottom-panels">
-      <div class="panel">
-        <div class="panel-head">Bank Details</div>
-        <div class="panel-body rows">
-          <div class="row"><span class="lbl">Bank</span><span class="colon">:</span><span class="val">{{bankName}}</span></div>
-          <div class="row"><span class="lbl">Branch</span><span class="colon">:</span><span class="val">{{bankBranch}}</span></div>
-          <div class="row"><span class="lbl">Account Number</span><span class="colon">:</span><span class="val">{{accountNumber}}</span></div>
-          <div class="row"><span class="lbl">IFSC</span><span class="colon">:</span><span class="val">{{ifsc}}</span></div>
-          <div class="row"><span class="lbl">Account Name</span><span class="colon">:</span><span class="val">{{businessName}}</span></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">Terms &amp; Conditions</div>
-        <div class="panel-body terms">
-          <ol>{{#each terms}}<li>{{this}}</li>{{/each}}</ol>
-        </div>
+    <!-- BANK DETAILS -->
+    <section class="bank-section">
+      <div class="bank-heading">Bank Details</div>
+      <div class="bank-grid">
+        <div class="bank-line"><b>Bank Name:</b> {{bankName}}</div>
+        <div class="bank-line"><b>Branch Name:</b> {{bankBranch}}</div>
+        <div class="bank-line"><b>Account Number:</b> {{accountNumber}}</div>
+        <div class="bank-line"><b>IFSC Code:</b> {{ifsc}}</div>
       </div>
     </section>
 
-    <hr class="rule-thick footer-rule">
-    <footer class="inv-footer">
-      <div>Thank you for your business.</div>
-      <div>Generated by AnaxBill</div>
-    </footer>
+    <!-- TERMS + SIGNATURE (conditional) -->
+    <section class="terms-section">
+      <div class="terms-heading">Terms and Conditions</div>
+      <ol class="terms-list">
+        {{#each terms}}<li>{{this}}</li>{{/each}}
+      </ol>
+
+      {{#if signatureRequired}}
+      <div class="signature-block">
+        <div class="sig-for">For <b>{{businessName}}</b></div>
+        <div class="sig-space"></div>
+        <div class="sig-line">Authorised Signatory</div>
+      </div>
+      {{/if}}
+    </section>
+
+    <!-- CONTACT STRIP -->
+    <section class="contact-strip">
+      <div><b>Phone:</b> {{phone}}</div>
+      <div><b>Website:</b> {{website}}</div>
+      <div><b>E-mail:</b> {{email}}</div>
+    </section>
+
+    <!-- FOOTER NOTE -->
+    {{#unless signatureRequired}}
+    <div class="footer-note">
+      This is computer generated invoice, no signature required
+    </div>
+    {{/unless}}
 
   </div>
 </body>

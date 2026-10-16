@@ -1,0 +1,48 @@
+{
+  "businessName": "Anax Enterprise",
+  "businessAddress": "Flat No: B2-502, Ashadeep Rainbow, Jeerota, Jagatpura, JAIPUR, Rajasthan - 303905",
+  "gstin": "08AMBPB5626L1Z3",
+  "phone": "09811919891",
+  "email": "navneet@anaxenterprise.com",
+  "website": "https://anaxenterprise.com",
+  "logo": "",
+
+  "invoiceNumber": "ST/2026-27/007",
+  "invoiceDate": "18 May 2026",
+  "dueDate": "17 Jun 2026",
+  "currency": "INR",
+  "poNumber": "NA",
+  "placeOfSupply": "Tamilnadu",
+
+  "customerName": "Redington Limited",
+  "customerContact": "",
+  "customerAddressLine1": "Redington Tower, Block 3, D 176, Inner ring Road",
+  "customerAddressLine2": "Saraswathy Nr, Puzhuthivakkam",
+  "customerCity": "Chennai",
+  "customerState": "Tamilnadu",
+  "customerPincode": "600091",
+  "customerCountry": "India",
+  "customerGstin": "33AABCR0347P1ZA",
+  "customerEmail": "",
+  "customerMobile": "",
+
+  "items": [
+    {
+      "description": "PAP-You Pass We pay",
+      "hsnSac": "999799",
+      "quantity": 1,
+      "unitPrice": 60861,
+      "taxRate": 18
+    }
+  ],
+
+  "bankName": "State Bank Of India",
+  "bankBranch": "NRI Colony Pratap Nagar",
+  "accountNumber": "43251245559",
+  "ifsc": "SBIN0061319",
+
+  "termsAndConditions": "1. Payments must be made within 30 days of receipt of invoice\n2. All Applicable taxes are included as specified\n3. Any discrepancies must be reported within 7 days of receipt of invoice",
+
+  "signatureRequired": false,
+  "status": "Sent"
+}
