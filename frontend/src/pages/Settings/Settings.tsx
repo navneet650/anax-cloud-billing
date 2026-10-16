@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   settingsService,
   type BusinessSettings,
@@ -13,49 +13,83 @@ const currencies = [
 ];
 
 export default function Settings() {
-  const [settings, setSettings] =
-    useState<BusinessSettings>(() =>
-      settingsService.get()
-    );
-
+  const [settings, setSettings] = useState<BusinessSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    settingsService
+      .get()
+      .then((data) => {
+        if (cancelled) return;
+        setSettings(data);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Failed to load settings";
+        setLoadError(message);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const updateField = <K extends keyof BusinessSettings>(
     field: K,
     value: BusinessSettings[K]
   ) => {
-    setSettings((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
+    setSettings((current) =>
+      current ? { ...current, [field]: value } : current
+    );
     setSaved(false);
+    setSaveError(null);
   };
 
-  const handleSave = () => {
-    settingsService.save(settings);
-    setSaved(true);
-
-    window.setTimeout(() => {
-      setSaved(false);
-    }, 2500);
+  const handleSave = async () => {
+    if (!settings) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const updated = await settingsService.save(settings);
+      setSettings(updated);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save settings";
+      setSaveError(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     const confirmed = window.confirm(
       "Reset all settings to their default values?"
     );
 
-    if (!confirmed) {
-      return;
+    if (!confirmed) return;
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const defaults = await settingsService.reset();
+      setSettings(defaults);
+      setSaved(false);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to reset settings";
+      setSaveError(message);
+    } finally {
+      setSaving(false);
     }
-
-    settingsService.reset();
-
-    const defaults = settingsService.get();
-
-    setSettings(defaults);
-    setSaved(false);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -89,6 +123,36 @@ export default function Settings() {
     marginBottom: "22px",
   };
 
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: 40,
+          textAlign: "center",
+          color: "#6b7280",
+          fontSize: 16,
+        }}
+      >
+        Loading settings...
+      </div>
+    );
+  }
+
+  if (loadError || !settings) {
+    return (
+      <div
+        style={{
+          padding: 40,
+          textAlign: "center",
+          color: "#dc2626",
+          fontSize: 16,
+        }}
+      >
+        {loadError || "Failed to load settings"}
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -96,7 +160,6 @@ export default function Settings() {
         paddingBottom: "40px",
       }}
     >
-      {/* HEADER */}
       <div
         style={{
           display: "flex",
@@ -145,25 +208,38 @@ export default function Settings() {
             </span>
           )}
 
+          {saveError && (
+            <span
+              style={{
+                color: "#dc2626",
+                fontSize: "14px",
+                fontWeight: 600,
+                maxWidth: "320px",
+              }}
+            >
+              {saveError}
+            </span>
+          )}
+
           <button
             type="button"
             onClick={handleSave}
+            disabled={saving}
             style={{
               border: "none",
-              background: "#2563eb",
+              background: saving ? "#93c5fd" : "#2563eb",
               color: "#ffffff",
               padding: "11px 20px",
               borderRadius: "8px",
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: saving ? "wait" : "pointer",
             }}
           >
-            Save Settings
+            {saving ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </div>
 
-      {/* BUSINESS PROFILE */}
       <div style={cardStyle}>
         <h2
           style={{
@@ -348,7 +424,7 @@ export default function Settings() {
             placeholder="Business address"
           />
         </div>
-                {/* BANK DETAILS */}
+
         <div
           style={{
             marginTop: "24px",
@@ -443,7 +519,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-                {/* INVOICE LOGO */}
+
         <div
           style={{
             marginTop: "24px",
@@ -517,7 +593,7 @@ export default function Settings() {
             </div>
           )}
         </div>
-                {/* TERMS & CONDITIONS */}
+
         <div
           style={{
             marginTop: "24px",
@@ -611,7 +687,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* INVOICE SETTINGS */}
       <div style={cardStyle}>
         <h2
           style={{
@@ -727,7 +802,6 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* RESET */}
       <div
         style={{
           display: "flex",
@@ -737,6 +811,7 @@ export default function Settings() {
         <button
           type="button"
           onClick={handleReset}
+          disabled={saving}
           style={{
             border: "1px solid #fecaca",
             background: "#ffffff",
@@ -744,7 +819,7 @@ export default function Settings() {
             padding: "10px 16px",
             borderRadius: "8px",
             fontWeight: 600,
-            cursor: "pointer",
+            cursor: saving ? "wait" : "pointer",
           }}
         >
           Reset Settings
