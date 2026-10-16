@@ -85,11 +85,11 @@ const [paidInvoiceTrend, setPaidInvoiceTrend] = useState<number[]>([]);
   return invoice.status || "Draft";
 };
 
-  const loadDashboardData = () => {
-    const customers = customerService.getAll();
+  const loadDashboardData = async () => {
+    const customers = await customerService.getAll();
     const invoices =
-      invoiceService.getAll() as DashboardInvoice[];
-    const products = productService.getAll();
+      await invoiceService.getAll() as DashboardInvoice[];
+    const products = await productService.getAll();
 
     setCustomerCount(customers.length);
     setInvoiceCount(invoices.length);

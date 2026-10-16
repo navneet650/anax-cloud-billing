@@ -24,6 +24,10 @@ export default function Products() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Silenced for now — will be used by error banners + save button in a later polish pass
+  void actionError;
+  void saving;
+
   useEffect(() => {
     let cancelled = false;
     productService
