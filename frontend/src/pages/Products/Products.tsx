@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "../../types/product";
 import { productService } from "../../services/productService";
 
@@ -18,169 +18,176 @@ const tableCellStyle = {
 };
 
 export default function Products() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const savedProducts = productService.getAll();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-    if (savedProducts.length > 0) {
-      return savedProducts;
-    }
-
-    const now = new Date().toISOString();
-
-    const sampleProducts: Product[] = [
-      {
-        id: "prod-001",
-        name: "AWS Cloud Consulting",
-        sku: "AWS-CONSULT",
-        description:
-          "AWS cloud consulting and architecture services",
-        type: "Service",
-        unit: "Hour",
-        unitPrice: 2500,
-        currency: "INR",
-        taxRate: 18,
-        hsnSac: "998314",
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: "prod-002",
-        name: "Cloud Infrastructure Management",
-        sku: "CLOUD-MGMT",
-        description:
-          "Managed cloud infrastructure and monitoring",
-        type: "Service",
-        unit: "Month",
-        unitPrice: 15000,
-        currency: "INR",
-        taxRate: 18,
-        hsnSac: "998315",
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
-
-    productService.saveAll(sampleProducts);
-
-    return sampleProducts;
-  });
+  useEffect(() => {
+    let cancelled = false;
+    productService
+      .getAll()
+      .then((data) => {
+        if (cancelled) return;
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Failed to load products";
+        setLoadError(message);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [showAddProduct, setShowAddProduct] = useState(false);
 
   const [editingProductId, setEditingProductId] =
-  useState<string | null>(null);
+    useState<string | null>(null);
 
-const [name, setName] = useState("");
-const [sku, setSku] = useState("");
-const [description, setDescription] = useState("");
-const [type, setType] = useState<"Product" | "Service">("Service");
-const [unit, setUnit] = useState("Hour");
-const [unitPrice, setUnitPrice] = useState("");
-const [currency, setCurrency] = useState<
-  "INR" | "AED" | "USD" | "EUR" | "GBP"
->("INR");
-const [taxRate, setTaxRate] = useState("18");
-const [hsnSac, setHsnSac] = useState("");
-const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<"Product" | "Service">("Service");
+  const [unit, setUnit] = useState("Hour");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [currency, setCurrency] = useState<
+    "INR" | "AED" | "USD" | "EUR" | "GBP"
+  >("INR");
+  const [taxRate, setTaxRate] = useState("18");
+  const [hsnSac, setHsnSac] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
-const saveProduct = () => {
-  if (!name.trim()) {
-    window.alert("Please enter a product or service name.");
-    return;
+  const resetForm = () => {
+    setEditingProductId(null);
+    setName("");
+    setSku("");
+    setDescription("");
+    setType("Service");
+    setUnit("Hour");
+    setUnitPrice("");
+    setCurrency("INR");
+    setTaxRate("18");
+    setHsnSac("");
+    setIsActive(true);
+    setActionError(null);
+  };
+
+  const saveProduct = async () => {
+    if (!name.trim()) {
+      window.alert("Please enter a product or service name.");
+      return;
+    }
+
+    if (!sku.trim()) {
+      window.alert("Please enter an SKU.");
+      return;
+    }
+
+    if (!unitPrice || Number(unitPrice) < 0) {
+      window.alert("Please enter a valid unit price.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    setSaving(true);
+    setActionError(null);
+
+    try {
+      if (editingProductId) {
+        const existing = products.find((p) => p.id === editingProductId);
+        if (!existing) {
+          setActionError("Product not found");
+          setSaving(false);
+          return;
+        }
+        const updated: Product = {
+          ...existing,
+          name: name.trim(),
+          sku: sku.trim(),
+          description: description.trim(),
+          type,
+          unit,
+          unitPrice: Number(unitPrice),
+          currency,
+          taxRate: Number(taxRate),
+          hsnSac: hsnSac.trim() || undefined,
+          isActive,
+          updatedAt: now,
+        };
+        const saved = await productService.update(updated);
+        setProducts((current) =>
+          current.map((p) => (p.id === saved.id ? saved : p))
+        );
+      } else {
+        const newProduct: Product = {
+          id: "",
+          name: name.trim(),
+          sku: sku.trim(),
+          description: description.trim(),
+          type,
+          unit,
+          unitPrice: Number(unitPrice),
+          currency,
+          taxRate: Number(taxRate),
+          hsnSac: hsnSac.trim() || undefined,
+          isActive,
+          createdAt: now,
+          updatedAt: now,
+        };
+        const saved = await productService.add(newProduct);
+        setProducts((current) => [...current, saved]);
+      }
+
+      resetForm();
+      setShowAddProduct(false);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save product";
+      setActionError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    const product = products.find((item) => item.id === id);
+    if (!product) return;
+
+    const confirmed = window.confirm(`Delete "${product.name}"?`);
+    if (!confirmed) return;
+
+    try {
+      await productService.delete(id);
+      setProducts((current) => current.filter((p) => p.id !== id));
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete product";
+      setActionError(message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 16 }}>
+        Loading products...
+      </div>
+    );
   }
 
-  if (!sku.trim()) {
-    window.alert("Please enter an SKU.");
-    return;
+  if (loadError) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "#dc2626", fontSize: 16 }}>
+        {loadError}
+      </div>
+    );
   }
 
-  if (!unitPrice || Number(unitPrice) < 0) {
-    window.alert("Please enter a valid unit price.");
-    return;
-  }
-
-const now = new Date().toISOString();
-
-const productData: Product = {
-  id: editingProductId ?? `prod-${Date.now()}`,
-  name: name.trim(),
-  sku: sku.trim(),
-  description: description.trim(),
-  type,
-  unit,
-  unitPrice: Number(unitPrice),
-  currency,
-  taxRate: Number(taxRate),
-  hsnSac: hsnSac.trim() || undefined,
-  isActive,
-  createdAt:
-    editingProductId
-      ? products.find(
-          (product) => product.id === editingProductId
-        )?.createdAt ?? now
-      : now,
-  updatedAt: now,
-};
-
-if (editingProductId) {
-  productService.update(productData);
-
-  setProducts((current) =>
-    current.map((product) =>
-      product.id === editingProductId
-        ? productData
-        : product
-    )
-  );
-} else {
-  productService.add(productData);
-
-  setProducts((current) => [
-    ...current,
-    productData,
-  ]);
-}
-
-setEditingProductId(null);
-
-setName("");
-setSku("");
-setDescription("");
-setType("Service");
-setUnit("Hour");
-setUnitPrice("");
-setCurrency("INR");
-setTaxRate("18");
-setHsnSac("");
-setIsActive(true);
-
-setShowAddProduct(false);
-};
-const deleteProduct = (id: string) => {
-  const product = products.find(
-    (item) => item.id === id
-  );
-
-  if (!product) {
-    return;
-  }
-
-  const confirmed = window.confirm(
-    `Delete "${product.name}"?`
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  productService.delete(id);
-
-  setProducts((current) =>
-    current.filter((item) => item.id !== id)
-  );
-};
   return (
     <div
       style={{

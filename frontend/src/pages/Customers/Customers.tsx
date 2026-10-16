@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Customer } from "../../types/customer";
 import { customerService } from "../../services/customerService";
 
@@ -30,89 +30,54 @@ export default function Customers() {
   const [pan, setPan] = useState("");
   const [state, setState] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
-const [addressLine2, setAddressLine2] = useState("");
-const [city, setCity] = useState("");
-const [pincode, setPincode] = useState("");
-const [country, setCountry] = useState("India");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [country, setCountry] = useState("India");
 
-  const [rows, setRows] = useState<Customer[]>(() => {
-    const savedCustomers = customerService.getAll();
+  const [rows, setRows] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-    if (savedCustomers.length > 0) {
-      return savedCustomers;
-    }
-
-    const now = new Date().toISOString();
-
-    const sampleCustomers: Customer[] = [
-      {
-        id: "cust-001",
-        companyName: "ABC Technologies Pvt Ltd",
-        contactPerson: "Rahul Sharma",
-        gstin: "08ABCDE1234F1Z5",
-        pan: "ABCDE1234F",
-        email: "rahul@abctech.com",
-        mobile: "9876543210",
-        addressLine1: "123 Business Park",
-        addressLine2: "",
-        city: "Jaipur",
-        state: "Rajasthan",
-        pincode: "302001",
-        country: "India",
-        customerType: "Business",
-        paymentTerms: 30,
-        creditLimit: 100000,
-        gstRegistered: true,
-        isActive: true,
-        notes: "",
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: "cust-002",
-        companyName: "XYZ Industries",
-        contactPerson: "Amit Patel",
-        gstin: "24ABCDE9876F1Z2",
-        pan: "ABCDE9876F",
-        email: "amit@xyz.com",
-        mobile: "9876501234",
-        addressLine1: "45 Industrial Estate",
-        addressLine2: "",
-        city: "Ahmedabad",
-        state: "Gujarat",
-        pincode: "380001",
-        country: "India",
-        customerType: "Business",
-        paymentTerms: 30,
-        creditLimit: 150000,
-        gstRegistered: true,
-        isActive: true,
-        notes: "",
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
-
-    customerService.saveAll(sampleCustomers);
-
-    return sampleCustomers;
-  });
+  useEffect(() => {
+    let cancelled = false;
+    customerService
+      .getAll()
+      .then((data) => {
+        if (cancelled) return;
+        setRows(data);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Failed to load customers";
+        setLoadError(message);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const resetForm = () => {
-  setCompanyName("");
-  setContactPerson("");
-  setEmail("");
-  setMobile("");
-  setGstin("");
-  setPan("");
-  setAddressLine1("");
-  setAddressLine2("");
-  setCity("");
-  setState("");
-  setPincode("");
-  setCountry("India");
-  setEditingCustomerId(null);
-};
+    setCompanyName("");
+    setContactPerson("");
+    setEmail("");
+    setMobile("");
+    setGstin("");
+    setPan("");
+    setAddressLine1("");
+    setAddressLine2("");
+    setCity("");
+    setState("");
+    setPincode("");
+    setCountry("India");
+    setEditingCustomerId(null);
+    setActionError(null);
+  };
 
   const handleClose = () => {
     resetForm();
@@ -124,7 +89,7 @@ const [country, setCountry] = useState("India");
     setOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!companyName.trim()) {
       alert("Please enter Company Name");
       return;
@@ -135,98 +100,113 @@ const [country, setCountry] = useState("India");
       return;
     }
 
+    setSaving(true);
+    setActionError(null);
+
     const now = new Date().toISOString();
 
-    if (editingCustomerId) {
-      const updatedRows = rows.map((customer) =>
-        customer.id === editingCustomerId
-          ? {
-              ...customer,
-              companyName: companyName.trim(),
-contactPerson: contactPerson.trim(),
-email: email.trim(),
-mobile: mobile.trim(),
-gstin: gstin.trim(),
-pan: pan.trim().toUpperCase(),
-addressLine1: addressLine1.trim(),
-addressLine2: addressLine2.trim(),
-city: city.trim(),
-state: state.trim(),
-pincode: pincode.trim(),
-country: country.trim(),
-updatedAt: now,
-            }
-          : customer
-      );
+    try {
+      if (editingCustomerId) {
+        const existing = rows.find((c) => c.id === editingCustomerId);
+        if (!existing) {
+          setActionError("Customer not found");
+          setSaving(false);
+          return;
+        }
 
-      setRows(updatedRows);
-      customerService.saveAll(updatedRows);
-    } else {
-      const newCustomer: Customer = {
-        id: crypto.randomUUID(),
-        companyName: companyName.trim(),
-        contactPerson: contactPerson.trim(),
-        gstin: gstin.trim(),
-        pan: pan.trim().toUpperCase(),
-        email: email.trim(),
-        mobile: mobile.trim(),
-        addressLine1: addressLine1.trim(),
-addressLine2: addressLine2.trim(),
-city: city.trim(),
-state: state.trim(),
-pincode: pincode.trim(),
-country: country.trim(),
-        customerType: "Business",
-        paymentTerms: 30,
-        creditLimit: 0,
-        gstRegistered: Boolean(gstin.trim()),
-        isActive: true,
-        notes: "",
-        createdAt: now,
-        updatedAt: now,
-      };
+        const updated: Customer = {
+          ...existing,
+          companyName: companyName.trim(),
+          contactPerson: contactPerson.trim(),
+          email: email.trim(),
+          mobile: mobile.trim(),
+          gstin: gstin.trim(),
+          pan: pan.trim().toUpperCase(),
+          addressLine1: addressLine1.trim(),
+          addressLine2: addressLine2.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          country: country.trim(),
+          updatedAt: now,
+        };
 
-      const updatedRows = [...rows, newCustomer];
+        const saved = await customerService.update(updated);
+        setRows((current) =>
+          current.map((c) => (c.id === saved.id ? saved : c))
+        );
+      } else {
+        const newCustomer: Customer = {
+          id: "",
+          companyName: companyName.trim(),
+          contactPerson: contactPerson.trim(),
+          gstin: gstin.trim(),
+          pan: pan.trim().toUpperCase(),
+          email: email.trim(),
+          mobile: mobile.trim(),
+          addressLine1: addressLine1.trim(),
+          addressLine2: addressLine2.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          country: country.trim(),
+          customerType: "Business",
+          paymentTerms: 30,
+          creditLimit: 0,
+          gstRegistered: Boolean(gstin.trim()),
+          isActive: true,
+          notes: "",
+          createdAt: now,
+          updatedAt: now,
+        };
 
-      setRows(updatedRows);
-      customerService.saveAll(updatedRows);
+        const saved = await customerService.add(newCustomer);
+        setRows((current) => [...current, saved]);
+      }
+
+      handleClose();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save customer";
+      setActionError(message);
+    } finally {
+      setSaving(false);
     }
-
-    handleClose();
   };
 
   const handleEdit = (customer: Customer) => {
-  setEditingCustomerId(customer.id);
-  setCompanyName(customer.companyName || "");
-  setContactPerson(customer.contactPerson || "");
-  setEmail(customer.email || "");
-  setMobile(customer.mobile || "");
-  setGstin(customer.gstin || "");
-  setPan(customer.pan || "");
-  setAddressLine1(customer.addressLine1 || "");
-  setAddressLine2(customer.addressLine2 || "");
-  setCity(customer.city || "");
-  setState(customer.state || "");
-  setPincode(customer.pincode || "");
-  setCountry(customer.country || "India");
-  setOpen(true);
-};
+    setEditingCustomerId(customer.id);
+    setCompanyName(customer.companyName || "");
+    setContactPerson(customer.contactPerson || "");
+    setEmail(customer.email || "");
+    setMobile(customer.mobile || "");
+    setGstin(customer.gstin || "");
+    setPan(customer.pan || "");
+    setAddressLine1(customer.addressLine1 || "");
+    setAddressLine2(customer.addressLine2 || "");
+    setCity(customer.city || "");
+    setState(customer.state || "");
+    setPincode(customer.pincode || "");
+    setCountry(customer.country || "India");
+    setActionError(null);
+    setOpen(true);
+  };
 
-  const handleDelete = (customer: Customer) => {
+  const handleDelete = async (customer: Customer) => {
     const confirmed = window.confirm(
       `Are you sure you want to delete ${customer.companyName}?`
     );
 
-    if (!confirmed) {
-      return;
+    if (!confirmed) return;
+
+    try {
+      await customerService.delete(customer.id);
+      setRows((current) => current.filter((c) => c.id !== customer.id));
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete customer";
+      setActionError(message);
     }
-
-    const updatedRows = rows.filter(
-      (item) => item.id !== customer.id
-    );
-
-    setRows(updatedRows);
-    customerService.saveAll(updatedRows);
   };
 
   const filteredRows = rows.filter((customer) => {
@@ -243,12 +223,24 @@ country: country.trim(),
   });
 
   const totalCustomers = rows.length;
-  const activeCustomers = rows.filter(
-    (customer) => customer.isActive
-  ).length;
-  const gstCustomers = rows.filter(
-  (customer) => customer.gstin?.trim()
-).length;
+  const activeCustomers = rows.filter((c) => c.isActive).length;
+  const gstCustomers = rows.filter((c) => c.gstin && c.gstin.trim()).length;
+
+  if (loading) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "#6b7280", fontSize: 16 }}>
+        Loading customers...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "#dc2626", fontSize: 16 }}>
+        {loadError}
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
