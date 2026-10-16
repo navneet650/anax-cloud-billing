@@ -1,0 +1,6 @@
+*.pdf
+*.before-*
+*.backup
+*.old
+node_modules/
+output.html
