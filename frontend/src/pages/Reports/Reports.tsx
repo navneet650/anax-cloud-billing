@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { invoiceService } from "../../services/invoiceService";
 import type { Invoice } from "../../types/invoice";
 
@@ -37,10 +37,15 @@ const getSmartStatus = (invoice: Invoice) => {
 };
 
 export default function Reports() {
-  const invoices = useMemo(
-    () => invoiceService.getAll(),
-    []
-  );
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    invoiceService.getAll().then((data) => {
+      if (!cancelled) setInvoices(data);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const reportData = useMemo(() => {
     const totalsByCurrency: Record<string, number> = {};

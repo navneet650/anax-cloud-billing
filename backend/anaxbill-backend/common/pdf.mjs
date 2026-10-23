@@ -3,6 +3,16 @@ import path from "node:path";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 
+function fmtDate(isoDate) {
+  if (!isoDate) return "";
+  try {
+    const d = new Date(isoDate.includes("T") ? isoDate : isoDate + "T00:00:00");
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return isoDate;
+  }
+}
+
 const fmt = (n) =>
   Number(n || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -107,7 +117,7 @@ export async function generateInvoicePdf(invoice, settings, customer) {
   const items = (invoice.items || []).map((it, i) => ({
     no: i + 1,
     description: it.description,
-    hsnSac: it.hsnSac || "-",
+    hsnSac: it.hsnSac || "—",
     quantity: it.quantity,
     unitPrice: fmt(it.unitPrice),
     taxRate: it.taxRate,
@@ -151,10 +161,10 @@ export async function generateInvoicePdf(invoice, settings, customer) {
     logo: settings.logoUrl || settings.logo || "",
 
     invoiceNumber: invoice.invoiceNumber || "",
-    invoiceDate: invoice.date || "",
-    dueDate: invoice.dueDate || "",
+    invoiceDate: fmtDate(invoice.date),
+    dueDate: fmtDate(invoice.dueDate),
     currency: invoice.currency || "INR",
-    poNumber: invoice.poNumber || "-",
+    poNumber: invoice.poNumber || "—",
     placeOfSupply: invoice.placeOfSupply || "",
 
     customerName: invoice.customerName || "",
