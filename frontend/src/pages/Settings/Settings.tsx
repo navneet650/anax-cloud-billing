@@ -800,6 +800,105 @@ export default function Settings() {
             />
           </div>
         </div>
+
+        <div
+          style={{
+            marginTop: "24px",
+            paddingTop: "24px",
+            borderTop: "1px solid #e5e7eb",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: "20px",
+            }}
+          >
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#111827",
+                  marginBottom: "4px",
+                }}
+              >
+                Signature Required on Invoice
+              </label>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "13px",
+                  color: "#6b7280",
+                  lineHeight: 1.5,
+                }}
+              >
+                When OFF: PDFs show "computer generated, no signature required" footer.
+                When ON: PDFs show a signature block for the authorised signatory instead.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                updateField("signatureRequired", !settings.signatureRequired)
+              }
+              style={{
+                flexShrink: 0,
+                width: 52,
+                height: 30,
+                borderRadius: 999,
+                border: "none",
+                background: settings.signatureRequired ? "#2563eb" : "#d1d5db",
+                cursor: "pointer",
+                position: "relative",
+                transition: "background 0.2s",
+              }}
+              aria-pressed={settings.signatureRequired}
+              title={
+                settings.signatureRequired
+                  ? "Signature mode ON — click to turn off"
+                  : "Computer-generated mode — click to turn on signature"
+              }
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  top: 3,
+                  left: settings.signatureRequired ? 25 : 3,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  background: "#ffffff",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  transition: "left 0.2s",
+                }}
+              />
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "8px 12px",
+              background: settings.signatureRequired ? "#eff6ff" : "#f9fafb",
+              borderRadius: 6,
+              fontSize: "12px",
+              color: settings.signatureRequired ? "#1e40af" : "#6b7280",
+              display: "inline-block",
+            }}
+          >
+            Current mode:{" "}
+            <b>
+              {settings.signatureRequired
+                ? "Signature block on PDF"
+                : "Computer generated (no signature)"}
+            </b>
+          </div>
+        </div>
       </div>
 
       <div

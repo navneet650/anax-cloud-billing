@@ -31,6 +31,7 @@
       <div class="meta-left">
         <div class="meta-line"><b>Invoice No:</b> {{invoiceNumber}}</div>
         <div class="meta-line"><b>Invoice Date:</b> {{invoiceDate}}</div>
+        <div class="meta-line"><b>Due Date:</b> {{dueDate}}</div>
         <div class="meta-line"><b>PO No:</b> {{poNumber}}</div>
         <div class="meta-line"><b>Place of Supply:</b> {{placeOfSupply}}</div>
       </div>
@@ -94,6 +95,7 @@
         <div class="trow"><span>Add: IGST ({{igstRate}}%):</span><span>{{igst}}</span></div>
         {{/if}}
         <div class="trow grand"><span>Total Amount After Tax:</span><span>{{grandTotal}}</span></div>
+        {{#if dueDate}}<div class="trow payby"><span>Pay By:</span><span>{{dueDate}}</span></div>{{/if}}
       </div>
     </section>
 

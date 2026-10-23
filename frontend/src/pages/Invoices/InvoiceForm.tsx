@@ -6,6 +6,7 @@ import type { Product } from "../../types/product";
 import { customerService } from "../../services/customerService";
 import { productService } from "../../services/productService";
 import { invoiceService } from "../../services/invoiceService";
+import { settingsService, type BusinessSettings } from "../../services/settingsService";
 import { formatCurrency } from "./helpers";
 
 type Props = {
@@ -16,6 +17,13 @@ type Props = {
 
 const currencies = ["INR", "AED", "USD", "EUR", "GBP"] as const;
 
+function formatLocalDate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function InvoiceForm({ invoice, onClose, onSaved }: Props) {
   const isEdit = invoice !== null;
 
@@ -24,6 +32,8 @@ export default function InvoiceForm({ invoice, onClose, onSaved }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<BusinessSettings | null>(null);
+  const [dueDateManuallySet, setDueDateManuallySet] = useState(isEdit);
 
   const [customerId, setCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -48,6 +58,20 @@ export default function InvoiceForm({ invoice, onClose, onSaved }: Props) {
       ? invoice.items.map((it, i) => ({ ...it, id: i + 1 }))
       : [{ id: 1, description: "", hsnSac: "", quantity: 1, unitPrice: 0, taxRate: 18 }]
   );
+
+  useEffect(() => {
+    settingsService.get().then(setSettings).catch(() => {});
+  }, []);
+
+  // Auto-fill dueDate whenever settings load or invoiceDate changes (if not manually overridden)
+  useEffect(() => {
+    if (!settings || dueDateManuallySet) return;
+    if (!invoiceDate) return;
+    if (dueDate && dueDate.length > 0) return; // already filled — don't overwrite
+    const d = new Date(invoiceDate + "T00:00:00");
+    d.setDate(d.getDate() + (settings.paymentTerms || 30));
+    setDueDate(formatLocalDate(d));
+  }, [settings, invoiceDate, dueDateManuallySet, dueDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,16 +254,29 @@ export default function InvoiceForm({ invoice, onClose, onSaved }: Props) {
                 <input
                   type="date"
                   value={invoiceDate}
-                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setInvoiceDate(newDate);
+                    if (!dueDateManuallySet && newDate && settings) {
+                      const d = new Date(newDate + "T00:00:00");
+                      d.setDate(d.getDate() + (settings.paymentTerms || 30));
+                      setDueDate(formatLocalDate(d));
+                    }
+                  }}
                   style={styles.input}
                 />
               </label>
               <label style={styles.field}>
-                <span style={styles.label}>Due Date</span>
+                <span style={styles.label}>
+                  Due Date {settings && !dueDateManuallySet ? "(auto)" : ""}
+                </span>
                 <input
                   type="date"
                   value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
+                  onChange={(e) => {
+                    setDueDate(e.target.value);
+                    setDueDateManuallySet(true);
+                  }}
                   style={styles.input}
                 />
               </label>

@@ -24,6 +24,7 @@ export type BusinessSettings = {
   defaultTaxRate: number;
   invoicePrefix: string;
   termsAndConditions: string;
+  signatureRequired: boolean;
 };
 
 type SettingsApiResponse = Partial<BusinessSettings> & {
@@ -55,6 +56,7 @@ const defaultSettings: BusinessSettings = {
   defaultTaxRate: 18,
   invoicePrefix: "INV-",
   termsAndConditions: "",
+  signatureRequired: false,
 };
 
 function fromApi(raw: SettingsApiResponse | null): BusinessSettings {
@@ -81,6 +83,7 @@ function fromApi(raw: SettingsApiResponse | null): BusinessSettings {
     defaultTaxRate: raw.defaultTaxRate ?? 18,
     invoicePrefix: raw.invoicePrefix ?? "INV-",
     termsAndConditions: raw.termsAndConditions ?? "",
+    signatureRequired: raw.signatureRequired ?? false,
   };
 }
 
@@ -107,6 +110,7 @@ function toApi(s: BusinessSettings): SettingsApiResponse {
     defaultTaxRate: s.defaultTaxRate,
     invoicePrefix: s.invoicePrefix,
     termsAndConditions: s.termsAndConditions,
+    signatureRequired: s.signatureRequired,
   };
 }
 
