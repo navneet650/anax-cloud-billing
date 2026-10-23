@@ -54,7 +54,7 @@ export async function handler(event) {
         "website", "address", "city", "state", "pincode",
         "bankName", "bankBranch", "accountNumber", "ifsc", "logoUrl",
         "defaultCurrency", "paymentTerms", "defaultTaxRate",
-        "invoicePrefix", "termsAndConditions",
+        "invoicePrefix", "termsAndConditions", "signatureRequired",
       ];
 
       const updates = {};
