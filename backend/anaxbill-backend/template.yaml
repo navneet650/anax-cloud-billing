@@ -112,6 +112,7 @@ Resources:
       StageName: !Ref Stage
       CorsConfiguration:
         AllowOrigins:
+          - "https://app.anaxenterprise.com"
           - "https://develop.d1jdrhajlzub2z.amplifyapp.com"
           - "http://localhost:5173"
         AllowHeaders: [Content-Type, Authorization]
