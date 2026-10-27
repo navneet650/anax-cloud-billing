@@ -1,6 +1,6 @@
 # AnaxBill — Project Handoff
 
-_Last updated: 2026-10-23_
+_Last updated: 2026-10-27_
 
 ## Where we are
 
@@ -28,6 +28,15 @@ _Last updated: 2026-10-23_
 - ✅ Due Date auto-calc from payment terms
 - ✅ "Pay By" callout on PDF totals
 - ✅ Dynamic Cognito redirects (works on app.anaxenterprise.com, amplifyapp.com, localhost)
+
+## Today's session (2026-10-27)
+
+- ✅ Fixed CORS for app.anaxenterprise.com (custom domain now works)
+- ✅ Dashboard reads from API (real data shows on fresh login)
+- ✅ Added `startingInvoiceNumber` in Settings (mid-year adoption solved)
+- ✅ Invoice counter self-heals to startingNumber
+- ✅ First real customer added (Optenix Tech Pvt Ltd)
+- ✅ First real invoice generated: ST/2026-27/0016
 
 ## What's remaining
 
