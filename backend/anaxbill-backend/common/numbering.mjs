@@ -19,6 +19,13 @@ export async function nextInvoiceNumber(companyId, prefix = "INV-", startingNumb
   const counterKey = { companyId, counterId: `invoice:${fy}` };
 
   try {
+    const existing = await ddb.send(new GetCommand({ TableName: COUNTERS_TABLE, Key: counterKey }));
+    if (existing.Item && startingNumber > existing.Item.seq) {
+      await ddb.send(new PutCommand({
+        TableName: COUNTERS_TABLE,
+        Item: { ...counterKey, seq: startingNumber, fy, prefix, updatedAt: new Date().toISOString() },
+      }));
+    }
     const result = await ddb.send(
       new UpdateCommand({
         TableName: COUNTERS_TABLE,
