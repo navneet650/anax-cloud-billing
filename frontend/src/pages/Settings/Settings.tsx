@@ -799,6 +799,28 @@ export default function Settings() {
               placeholder="INV-"
             />
           </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>
+              Next Invoice Number
+            </label>
+
+            <input
+              type="number"
+              style={inputStyle}
+              value={settings.startingInvoiceNumber || ""}
+              onChange={(e) =>
+                updateField(
+                  "startingInvoiceNumber",
+                  Number(e.target.value)
+                )
+              }
+              placeholder="e.g. 16"
+            />
+            <span style={{ fontSize: "11px", color: "#6b7280", marginTop: "4px" }}>
+              If you have existing invoices, set this to your next number. Otherwise, leave it at 1.
+            </span>
+          </div>
         </div>
 
         <div

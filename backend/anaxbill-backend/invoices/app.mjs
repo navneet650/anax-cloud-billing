@@ -32,7 +32,7 @@ export async function handler(event) {
 
       const settings = await getItem(TABLES.SETTINGS, { companyId });
       const prefix = body.invoiceNumber || settings?.invoicePrefix || "INV-";
-      const invoiceNumber = body.invoiceNumber || await nextInvoiceNumber(companyId, prefix);
+      const invoiceNumber = body.invoiceNumber || await nextInvoiceNumber(companyId, prefix, settings?.startingInvoiceNumber || 1);
 
       const items = body.items.map((it, i) => ({
         id: i + 1,

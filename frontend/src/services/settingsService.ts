@@ -25,6 +25,7 @@ export type BusinessSettings = {
   invoicePrefix: string;
   termsAndConditions: string;
   signatureRequired: boolean;
+  startingInvoiceNumber: number;
 };
 
 type SettingsApiResponse = Partial<BusinessSettings> & {
@@ -57,6 +58,7 @@ const defaultSettings: BusinessSettings = {
   invoicePrefix: "INV-",
   termsAndConditions: "",
   signatureRequired: false,
+  startingInvoiceNumber: 1,
 };
 
 function fromApi(raw: SettingsApiResponse | null): BusinessSettings {
@@ -84,6 +86,7 @@ function fromApi(raw: SettingsApiResponse | null): BusinessSettings {
     invoicePrefix: raw.invoicePrefix ?? "INV-",
     termsAndConditions: raw.termsAndConditions ?? "",
     signatureRequired: raw.signatureRequired ?? false,
+    startingInvoiceNumber: raw.startingInvoiceNumber ?? 1,
   };
 }
 
@@ -111,6 +114,7 @@ function toApi(s: BusinessSettings): SettingsApiResponse {
     invoicePrefix: s.invoicePrefix,
     termsAndConditions: s.termsAndConditions,
     signatureRequired: s.signatureRequired,
+    startingInvoiceNumber: s.startingInvoiceNumber,
   };
 }
 

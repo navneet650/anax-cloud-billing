@@ -14,7 +14,7 @@ export function currentFinancialYear(date = new Date()) {
   return `${startYear}-${String(endYear).slice(-2)}`;
 }
 
-export async function nextInvoiceNumber(companyId, prefix = "INV-") {
+export async function nextInvoiceNumber(companyId, prefix = "INV-", startingNumber = 1) {
   const fy = currentFinancialYear();
   const counterKey = { companyId, counterId: `invoice:${fy}` };
 
@@ -47,7 +47,7 @@ export async function nextInvoiceNumber(companyId, prefix = "INV-") {
             TableName: COUNTERS_TABLE,
             Item: {
               ...counterKey,
-              seq: 1,
+              seq: Number(startingNumber),
               fy,
               prefix,
               createdAt: new Date().toISOString(),
@@ -55,7 +55,7 @@ export async function nextInvoiceNumber(companyId, prefix = "INV-") {
             },
           })
         );
-        return `${prefix}0001`;
+        return `${prefix}${String(startingNumber).padStart(4, "0")}`;
       }
     }
     throw err;
