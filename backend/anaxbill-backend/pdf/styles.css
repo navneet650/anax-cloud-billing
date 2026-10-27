@@ -1,4 +1,4 @@
-@page { size: A4; margin: 12mm; }
+@page { size: A4; margin: 10mm 12mm; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -55,6 +55,7 @@ body {
 
 /* ---------- Meta + Customer ---------- */
 .meta-section {
+  margin-bottom: 4mm;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6mm;
@@ -106,7 +107,7 @@ body {
 }
 .items tbody td {
   font-size: 8.8pt;
-  padding: 2.4mm 2mm;
+  padding: 1.8mm 2mm;
   border: 0.3px solid #d1d9e0;
   vertical-align: middle;
   color: #1f2937;
@@ -129,7 +130,7 @@ body {
 .totals-section {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 3mm;
+  margin-bottom: 2mm;
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -166,6 +167,7 @@ body {
 
 /* ---------- Amount in Words ---------- */
 .amount-in-words {
+  margin-bottom: 2mm;
   margin-bottom: 4mm;
   padding: 2mm 0;
   font-size: 8.8pt;
@@ -178,6 +180,7 @@ body {
 
 /* ---------- Bank Details ---------- */
 .bank-section {
+  margin-bottom: 1.5mm;
   margin-bottom: 4mm;
   padding: 3mm 3.5mm;
   border: 0.4px solid #d1d9e0;
@@ -204,6 +207,7 @@ body {
 
 /* ---------- Terms + Signature ---------- */
 .terms-section {
+  margin-bottom: 2mm;
   position: relative;
   margin-bottom: 4mm;
   page-break-inside: avoid;
@@ -218,11 +222,11 @@ body {
 .terms-list {
   margin: 0;
   padding-left: 5mm;
-  font-size: 8.6pt;
-  line-height: 1.5;
+  font-size: 8.2pt;
+  line-height: 1.3;
   color: #374151;
 }
-.terms-list li { margin-bottom: 0.6mm; }
+.terms-list li { margin-bottom: 0.4mm; }
 
 .signature-block {
   position: absolute;
@@ -232,7 +236,7 @@ body {
   text-align: center;
   font-size: 9pt;
 }
-.sig-for { color: #1f2937; margin-bottom: 3mm; }
+.sig-for { color: #1f2937; margin-bottom: 2mm; }
 .sig-space { min-height: 15mm; }
 .sig-line {
   border-top: 0.5px solid #123155;
@@ -246,7 +250,7 @@ body {
 .contact-strip {
   display: flex;
   justify-content: space-between;
-  padding: 2.5mm 0;
+  padding: 1mm 0;
   border-top: 0.4px solid #d1d9e0;
   border-bottom: 0.4px solid #d1d9e0;
   margin-bottom: 2mm;
